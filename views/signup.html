@@ -1,0 +1,28 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <form id="signup-form" action="/auth/signup" method="post">
+    <fieldset>
+      <legend style="font-weight: bold;">회원가입</legend>
+      <input id="id" name="id" type="text" placeholder="아이디" >
+      <br />
+      <input id="password" name="password" type="password" placeholder="비밀번호" />
+      <br />
+      <input id="name" name="name" type="text" placeholder="이름" />
+      <br />
+      <button type="submit">회원가입</button>
+    </fieldset>
+  </form>
+{% endblock %}
+
+{% block script %}
+  <script>
+    window.onload = () => {
+      if (new URL(location.href).searchParams.get('error')) {
+        alert('이미 존재하는 이메일입니다.');
+        history.back();
+      }
+    }
+  </script>
+{% endblock %}
+

@@ -1,0 +1,112 @@
+{% extends 'layout.html' %} 
+
+{% block content %}
+<form class="search-form" action="/admin/coupon" method="get">
+  <input type="text" id="name" name="name" placeholder="쿠폰명을 입력하세요" />
+  <button type="submit">검색</button>
+</form>
+
+<form class="edit-form" action="/admin/coupon" method="put"></form>
+
+<div class="header">
+  검색 결과
+  <button class="create" onclick="onClickCreate()">쿠폰 추가</button>
+</div>
+<div id="couponInfo" class="info">
+  <table>
+    <colgroup>
+      <col style="width: 7%" />
+      <col style="width: 20%" />
+      <col style="width: 30%" />
+      <col style="width: 8%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 15%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>쿠폰명</th>
+        <th>설명</th>
+        <th>할인율(%)</th>
+        <th>할인액(원)</th>
+        <th>최소금액(원)</th>
+        <th>선택</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for coupon in coupons %}
+      <tr class="coupon-admin">
+        <td class="id">{{coupon.id}}</td>
+        <td class="name">{{coupon.name}}</td>
+        <td class="description">{{coupon.description}}</td>
+        <td class="discountRate">{{coupon.discountRate}}</td>
+        <td class="discountPrice">{{coupon.discountPrice}}</td>
+        <td class="minPrice">{{coupon.minPrice}}</td>
+        <td class="select">
+          <button class="edit" onclick="onClickEdit()">수정</button>
+          <button class="delete" onClick="onClickDelete(event)">삭제</button>
+          <button class="send" onClick="onClickSend(event)">전달</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %} 
+
+{% block script %}
+<script>
+  function onClickCreate() {
+    window.open(
+      "/admin/coupon/create",
+      "",
+      "width=500, height=300, scrollbars=yes, resizable=no"
+    );
+  }
+
+  let child = null;   // 자식 창
+
+  function onClickEdit() {
+    child = window.open(
+      "/admin/coupon/edit",
+      "",
+      "width=500, height=300, scrollbars=yes, resizable=no"
+    );
+  }
+
+  function onClickDelete(event) {
+    if (confirm("정말 삭제하시겠습니까?")) {
+      const ancestor = event.target.closest('.coupon-admin');
+      axios
+        .delete("/admin/coupon", {
+          data: {
+            id: +ancestor.querySelector(".id").textContent,
+          },
+        })
+        .then((result) => {
+          location.href = `/admin/coupon?status=${result.data}`;
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }
+
+  function onClickSend(event) {
+    const ancestor = event.target.closest('.coupon-admin');
+    const attrs = [...ancestor.children].slice(0, -1);
+
+    attrs.forEach((attr) => {
+      child.document.getElementById(attr.className).value = attr.textContent;
+    });
+  }
+
+  window.onload = () => {
+    if (new URL(location.href).searchParams.get("status") === "deleted") {
+      alert("선택한 쿠폰의 삭제가 완료되었습니다.");
+      location.href = "/admin/coupon";
+    }
+  };
+</script>
+{% endblock %}

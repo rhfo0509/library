@@ -1,0 +1,48 @@
+{% extends 'layout.html' %} 
+
+{% block content %}
+  <div class="header">주문상세정보</div>
+  <div id="detailInfo" class="info">
+    <table>
+      <colgroup>
+        <col style="width:20%">
+        <col style="width:30%">
+        <col style="width:15%">
+        <col style="width:15%">
+        <col style="width:20%">
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th>이미지</th>
+          <th>제목</th>
+          <th>판매가</th>
+          <th>수량</th>
+          <th>합계</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for orderItem, book in results %}
+          <tr class="item">
+            <td class="thumbnail">
+              <img src="{{book.thumbnail}}" alt="도서 이미지" width="75px">
+            </td>
+            <td class="title">{{book.title}}</td>
+            <td class="price">{{book.price}}</td>
+            <td class="count">{{orderItem.count}}</td>
+            <td class="total">{{book.price * orderItem.count}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table> 
+  </div>
+
+  <div id="orderDetail">
+    <div><b>주문일자: </b>{{formatDate(order.createdAt)}}</div>
+    <div><b>배송지: </b>[{{order.zipCode}}] {{order.address}} {{order.detailAddress}}</div>
+    <div><b>결제카드: </b>{{order.cardCompany}}카드</div>
+    <div><b>정가: </b>{{order.totalPrice}}원</div>
+    <div><b>사용 포인트: </b>{{order.usedPoint}}원</div>
+    <div><b>결제금액: </b>{{order.totalPrice - order.usedPoint}}원</div>
+  </div>
+{% endblock %}

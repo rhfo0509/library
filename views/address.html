@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+  </head>
+  <body>
+    {% block content %}
+      <button onclick="execDaumPostcode()">우편번호 찾기</button>
+      <form id="addr-form" action="/address" method="post">
+        <input type="text" id="zipCode" name="zipCode" placeholder="우편번호" readonly required />
+        <br />
+        <input type="text" id="address" name="address" placeholder="주소" readonly required />
+        <br />
+        <input type="text" id="detailAddress" name="detailAddress" placeholder="상세주소" />
+        <br />
+        <button type="submit">새 주소 등록</button>
+      </form>
+
+      <div id="addrInfo">
+        {% for result in results %}
+          <div class="address" data-id="{{result.id}}">
+            <input type="radio" name="address">
+            <span>{{result.zipCode}}</span>
+            |
+            <span>{{result.address}}</span>
+            |
+            <span>{{result.detailAddress}}</span>
+            |
+            <button onclick="deleteAddr()">삭제</button>
+          </div>
+        {% endfor %}
+      </div>
+      <button onclick="onClickAddrBtn()">배송받을 주소지로 설정</button>
+    {% endblock %}
+
+    {% block script %}
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+      <script>
+        function execDaumPostcode() {
+          new daum.Postcode({
+            oncomplete: function (data) {
+              let addr = ""; // 주소 변수
+
+              //사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+              if (data.userSelectedType === "R") {
+                // 사용자가 도로명 주소를 선택했을 경우
+                addr = data.roadAddress;
+              } else {
+                // 사용자가 지번 주소를 선택했을 경우(J)
+                addr = data.jibunAddress;
+              }
+
+              // 우편번호와 주소 정보를 해당 필드에 넣는다.
+              document.getElementById("zipCode").value = Number(data.zonecode);
+              document.getElementById("address").value = addr;
+              // 커서를 상세주소 필드로 이동한다.
+              document.getElementById("detailAddress").focus();
+            },
+          }).open();
+        }
+
+        function onClickAddrBtn() {
+          const addrItems = document.getElementById('addrInfo').children;
+          [...addrItems].forEach((item) => {
+            if (item.firstElementChild.checked) {
+              const zipCode = item.children[1].textContent;
+              const address = item.children[2].textContent;
+              const detailAddress = item.children[3].textContent;
+              
+              console.log(zipCode, address, detailAddress);
+              opener.document.getElementById('zipCode').value = zipCode;
+
+              opener.document.getElementById('address').value = address;
+
+              opener.document.getElementById('detailAddress').value = detailAddress;
+
+              // window.opener.location.reload();
+              window.close();
+            }
+          })
+        }
+
+        function deleteAddr() {
+          const addrItems = document.getElementById('addrInfo').children;
+          const checked = [...addrItems].find((item) => item.firstElementChild.checked);
+          console.log(checked);
+          axios.delete('/address', {
+            data: {
+              addrId: +checked.dataset.id,
+            }
+          })
+            .catch((err) => console.error(err));
+          location.reload();
+        }
+
+        if (new URL(location.href).searchParams.get("error")) {
+          alert(new URL(location.href).searchParams.get("error"));
+          history.back();
+        }
+      </script>
+    {% endblock %}
+  </body>
+</html>

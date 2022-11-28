@@ -1,0 +1,25 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <form id="login-form" action="/auth/login" method="post">
+    <fieldset>
+      <legend style="font-weight: bold;">로그인</legend>
+      <input id="id" name="id" type="text" placeholder="아이디"/>
+      <br />
+      <input id="password" name="password" type="password" placeholder="비밀번호"/>
+      <br />
+      <button type="submit">로그인</button>
+    </fieldset>
+  </form>
+{% endblock %}
+
+{% block script %}
+  <script>
+    window.onload = () => {
+      if (new URL(location.href).searchParams.get('loginError')) {
+        alert(new URL(location.href).searchParams.get('loginError'));
+      }
+    };
+  </script>
+{% endblock %}
+

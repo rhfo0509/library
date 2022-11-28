@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+  </head>
+  <body>
+    {% block content %}
+      <div id="coupon-create">
+        쿠폰명:<input type="text" id="name" required />
+        <br />
+        설명:<input type="text" id="description" required />
+        <br />
+        할인율:<input type="number" min="0" max="100" id="discountRate" value=0 />
+        <br />
+        할인액:<input type="number" min="0" id="discountPrice" value=0 />
+        <br />
+        최소금액:<input type="number" min="0" id="minPrice" value=0 />
+      </div>
+      <button onclick="createCoupon()">생성</button>
+    {% endblock %}
+
+    {% block script %}
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script>
+        function createCoupon() {
+          const inputs = document.getElementById('coupon-create').getElementsByTagName('input');
+          const result = {};
+
+          [...inputs].forEach((input) => {
+            result[input.id] = input.value;
+          });
+
+          axios.post('/admin/coupon', {
+            result,
+          })
+            .then((result) => {
+              location.href = `/admin/coupon/create?status=${result.data}`;
+            })
+            .catch((err) => {
+              console.error(err);
+            })
+        }
+
+        if (new URL(location.href).searchParams.get("status") === "created") {
+          alert("쿠폰 생성이 완료되었습니다.");
+          window.opener.location.reload();
+          window.close();
+        }
+      </script>
+    {% endblock %}
+  </body>
+</html>

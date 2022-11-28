@@ -1,0 +1,61 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <form action="/reviews/create" method="post">
+    <h3>리뷰 작성하기</h3>
+    <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
+    평점: <input type="number" id="rate" name="rate" min="1" max="5" />
+    <br />
+    리뷰: <textarea id="contents" name="contents" cols="50" rows="5"></textarea>
+    <br />
+    <button>작성</button>
+  </form>
+
+  <div id="myReview">
+    <h3>내가 작성한 리뷰</h3>
+    <span>{{myReview.rate}}</span>
+    |
+    <span>{{myReview.contents}}</span>
+    |
+    <button onclick="onClickEdit(event)">수정하기</button>
+    <form action="/reviews/edit" method="put">
+      <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
+      평점: <input type="number" id="rate" name="rate" min="1" max="5" />
+      <br />
+      리뷰: <textarea id="contents" name="contents" cols="50" rows="5"></textarea>
+      <br />
+      <button>작성</button>
+    </form>
+  </div>
+
+  <div id="reviewList">
+    <h3>리뷰 목록</h3>
+    <span>평점: {{book.avgRate}}</span>
+    &nbsp;
+    <span>참여자수: {{book.countRate}}</span>
+    <hr />
+    {% for review in reviews %}
+      <span>{{review.userId}}</span>
+      | 
+      <span>{{review.rate}}</span>
+      |
+      <span>{{review.contents}}</span>
+      <br />
+    {% endfor %}
+  </div>
+{% endblock %}
+
+{% block script %}
+<script>
+  function onClickEdit(event) {
+
+  }
+
+  window.onload = () => { 
+    if (new URL(location.href).searchParams.get("status") === "denied") {
+      alert("이미 이 책에 리뷰를 남겼습니다.");
+      history.back();
+    }
+  }
+</script>
+{% endblock %}

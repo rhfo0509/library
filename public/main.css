@@ -1,0 +1,270 @@
+* {
+  box-sizing: border-box;
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+button:not(#paymentInfo button) {
+  border: 1px solid #1b5ac2;
+  padding: 5px;
+  background: #1b5ac2;
+  color: white;
+  cursor: pointer;
+}
+
+.header {
+  display: flex;
+  text-align: center;
+  justify-content: space-between;
+  margin: 20px 10px 10px 10px;
+  padding-left: 5px;
+  font-weight: bold;
+  font-size: 24px;
+  background: #c9ebf5;
+}
+
+.info {
+  margin-top: 20px;
+}
+
+.info table {
+  margin-left: auto;
+  margin-right: auto;
+  width: calc(100% - 50px);
+}
+
+.info th {
+  text-align: center;
+}
+
+.info td {
+  text-align: center;
+  height: 100px;
+}
+
+/* layout.html */
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100vw;
+  height: 50px;
+  background-color: royalblue;
+  color: white;
+  padding-left: 10px;
+}
+
+header h2 {
+  display: inline-block;
+  vertical-align: middle;
+  color: white;
+  margin: 0.5rem;
+  cursor: pointer;
+}
+
+header nav {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+header nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+header nav ul a {
+  display: block;
+  text-align: center;
+  margin: 0.25rem;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+}
+
+/* login.html */
+#login-form {
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+#login-form fieldset {
+  width: 300px;
+  height: 150px;
+  text-align: center;
+}
+
+#login-form input {
+  margin-bottom: 10px;
+}
+
+/* signup.html */
+#signup-form {
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+#signup-form fieldset {
+  width: 300px;
+  height: 180px;
+  text-align: center;
+}
+
+#signup-form input {
+  margin-bottom: 10px;
+}
+
+/* main.html */
+
+.search-form {
+  display: flex;
+  justify-content: center;
+  margin-left: 10px;
+  margin-top: 10px;
+  height: 25px;
+}
+
+.search-form input {
+  border: 1px solid blue;
+  padding: 1px;
+  width: 325px;
+}
+
+.search-form button {
+  border: none;
+  padding: 4px;
+}
+
+.book {
+  margin: 10px;
+}
+
+.book .title {
+  font-weight: bold;
+  padding: 10px;
+  background: rgb(166, 191, 201);
+  width: 100%;
+}
+
+.book .details {
+  margin-top: 10px;
+  display: flex;
+}
+
+.book .thumbnail {
+  display: inline;
+}
+
+.book .contents {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+}
+
+.book .contents span {
+  display: inline-block;
+  font-weight: 600;
+  width: 100px;
+}
+
+.book .options {
+  display: flex;
+  justify-content: space-around;
+  color: blue;
+  cursor: pointer;
+}
+
+/* cart.html */
+
+#cartHeader {
+  margin: 20px;
+  padding-left: 5px;
+  font-weight: bold;
+  font-size: 30px;
+  background: #c9ebf5;
+}
+
+#cartInfo #total {
+  margin-right: 20px;
+  text-align: right;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+#cartInfo #options {
+  display: flex;
+  margin-right: 20px;
+  margin-top: 10px;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* purchase.html */
+
+#selected {
+  margin: 10px;
+}
+
+#purchase-form {
+  display: flex;
+  justify-content: center;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+#purchase-form input {
+  border: 1px solid lightslategray;
+  padding: 1px;
+  width: 325px;
+}
+
+#purchase-form #total {
+  text-align: right;
+  font-weight: bold;
+}
+
+#purchase-form #total input {
+  border: none;
+  width: 60px;
+}
+
+#purchase-form #options {
+  display: flex;
+  margin-top: 10px;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* mypage.html */
+
+#paymentInfo button {
+  border: none;
+  background: white;
+  color: rgb(21, 77, 244);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* detail.html */
+
+#detailInfo button {
+  border: none;
+  background: white;
+  color: rgb(21, 77, 244);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#orderDetail {
+  text-align: center;
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+  </head>
+  <body>
+    {% block content %}
+      <form id="card-form" action="/card" method="post">
+        <input type="text" id="number" name="number" placeholder="카드번호" oninput="inputNumberFormat(this)" maxlength="19" required />
+        <br />
+        <input type="month" id="expirationDate" name="expirationDate" required />
+        <br />
+        <select name="company">
+          <option value="신한">신한카드</option>
+          <option value="우리">우리카드</option>
+          <option value="국민">국민카드</option>
+          <option value="하나">하나카드</option>
+          <option value="롯데">롯데카드</option>
+          <option value="농협">농협카드</option>
+          <option value="삼성">삼성카드</option>
+          <option value="비씨">비씨카드</option>
+        </select>
+        <br />
+        <button type="submit">새 카드 등록</button>
+      </form>
+
+      <div id="cardInfo">
+        {% for result in results %}
+          <div class="card">
+            <input type="radio" name="card">
+            <span>{{result.number}}</span>
+            |
+            <span>{{result.expirationDate}}</span>
+            |
+            <span>{{result.company}}</span>
+            |
+            <button onclick="deleteCard()">삭제</button>
+          </div>
+        {% endfor %}
+      </div>
+      <button onclick="onClickCardBtn()">이 카드로 설정</button>
+    {% endblock %}
+
+    {% block script %}
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script>
+        function onClickCardBtn() {
+          const cardItems = document.getElementById('cardInfo').children;
+          [...cardItems].forEach((item) => {
+            if (item.firstElementChild.checked) {
+              const number = item.children[1].textContent;
+              const expirationDate = item.children[2].textContent;
+              const company = item.children[3].textContent;
+              opener.document.getElementById('number').value = number;
+
+              opener.document.getElementById('expirationDate').value = expirationDate;
+
+              opener.document.getElementById('company').value = company;
+            }
+          })
+
+          // window.opener.location.reload();
+          window.close();
+        }
+
+        const inputNumberFormat = (target) => {
+          target.value = target.value
+            .replace(/[^0-9]/g, '')
+            .replace(/^(\d{4})(\d{4})(\d{4})(\d{4})$/, `$1-$2-$3-$4`)
+
+          console.log(target.value);
+        }
+
+        function deleteCard() {
+          const cardItems = document.getElementById('cardInfo').children;
+          const checked = [...cardItems].find((item) => item.firstElementChild.checked);
+          axios.delete('/card', {
+            data: {
+              cardNumber: checked.children[1].textContent,
+            }
+          })
+            .catch((err) => console.error(err));
+          location.reload();
+        }
+
+        if (new URL(location.href).searchParams.get("error")) {
+          alert(new URL(location.href).searchParams.get("error"));
+          history.back();
+        }
+      </script>
+    {% endblock %}
+  </body>
+</html>

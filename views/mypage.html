@@ -1,0 +1,105 @@
+{% extends 'layout.html' %} 
+
+{% block content %}
+  <div class="header">{{user.name}}님의 정보</div>
+  <div>
+    <h3>현재 등급은 {{user.grade}}입니다</h3>
+    <h4>다음 등급까지 결제해야 되는 금액: </h4>
+    <span>보유중인 포인트: {{user.point}} | 보유중인 스탬프: {{user.stamp}}</span>
+  </div>
+  <div id="myCouponList">
+    <h3>보유중인 쿠폰</h3>
+    {% for userCoupon in userCoupons %}
+      {% if userCoupon.status == true %}
+        <div class="myCoupon" style="font-size: 14px;">
+          <span>{{userCoupon.Coupon.name}}</span>
+          |
+          <span>{{userCoupon.Coupon.description}}</span>
+          |
+          발급일: <span>{{formatDate(userCoupon.issuanceDate)}}</span>
+          |
+          만료일: <span>{{formatDate(userCoupon.extinctionDate)}}</span>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="header">{{user.name}}님의 결제내역</div>
+  <div id="paymentInfo" class="info">
+      <table>
+        <colgroup>
+          <col style="width:10%">
+          <col style="width:20%">
+          <col style="width:10%">
+          <col style="width:20%">
+          <col style="width:20%">
+          <col style="width:20%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>주문번호</th>
+            <th>주문일자</th>
+            <th>수량</th>
+            <th>가격</th>
+            <th>실구매가</th>
+            <th>선택</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr class="item">
+            <td class="id">{{order.id}}</td>
+            <td class="title">{{formatDate(order.createdAt)}}</td>
+            <td class="count">{{order.totalCount}}</td>
+            <td class="price">{{order.totalPrice}}</td>
+            <td class="realPrice">{{order.totalPrice - order.usedPoint}}</td>
+            <td class="total">
+              <button class="cancel" onclick="onClickCancel(event)">주문취소</button>
+              <button class="detail" onClick="onClickDetail(event)">상세보기</button>
+            </td>
+          </tr>
+    {% endfor %}
+  </div>
+{% endblock %} 
+
+{% block script %}
+<script>
+  function onClickCancel(event) {
+    if (confirm('주문을 취소하시겠습니까?')) {
+      const orderItem = event.target.closest(".item");
+      const orderId = Number(orderItem.querySelector('.id').textContent);
+
+      axios.post('/purchase/withdraw', {
+        orderId,
+      })
+        .then(() => {
+          alert("성공적으로 완료되었습니다.")
+          location.href = "/mypage";
+        })
+        .catch((err) => {
+          console.error(err);
+        })
+    }
+  }
+
+  // 수정해야 할 부분
+  function onClickDetail(event) {
+    const orderItem = event.target.closest(".item");
+    const orderId = Number(orderItem.querySelector('.id').textContent);
+
+    axios.get('/purchase/detail', { params: { orderId } })
+      .then(() => {
+        location.href = `/purchase/detail?orderId=${orderId}`
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+  }
+  
+  window.onload = () => {
+    if (new URL(location.href).searchParams.get('status') === 'success') {
+      alert('성공적으로 완료되었습니다.');
+      location.href = "/mypage";
+    }
+  }
+</script>
+{% endblock %}

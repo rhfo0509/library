@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+  </head>
+  <body>
+    {% block content %}
+      <div id="book-edit">
+        <input type="hidden" id="id" />
+        도서명:<input type="text" id="title" required />
+        <br />
+        저자:<input type="text" id="authors" required />
+        <br />
+        출판사:<input type="text" id="publisher" required />
+        <br />
+        판매가:<input type="number" min="0" id="price" required />
+        <br />
+        수량:<input type="number" min="0" id="count" required />
+        <br />
+        썸네일 URL:<input type="text" id="thumbnail" />
+        <br />
+        상세정보 URL:<input type="text" id="details" />
+        <br />
+      </div>
+      <button onclick="updateBook()">수정</button>
+    {% endblock %}
+
+    {% block script %}
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script>
+        function updateBook() {
+          const inputs = document.getElementById('book-edit').getElementsByTagName('input');
+          const result = {};
+
+          [...inputs].forEach((input) => {
+            result[input.id] = input.value;
+          });
+
+          axios.put('/admin/book', {
+            result,
+          })
+            .then((result) => {
+              location.href = `/admin/book/edit?status=${result.data}`;
+            })
+            .catch((err) => {
+              console.error(err);
+            })
+        }
+
+        if (new URL(location.href).searchParams.get("status") === "edited") {
+          alert("도서 수정이 완료되었습니다.");
+          window.opener.location.reload();
+          window.close();
+        }
+      </script>
+    {% endblock %}
+  </body>
+</html>

@@ -1,0 +1,146 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <div class="header">주문목록</div>
+  <div id="purchaseInfo" class="info">
+    <table>
+      <colgroup>
+        <col style="width:20%">
+        <col style="width:30%">
+        <col style="width:15%">
+        <col style="width:15%">
+        <col style="width:20%">
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th>이미지</th>
+          <th>제목</th>
+          <th>판매가</th>
+          <th>수량</th>
+          <th>합계</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in results %}
+        <tr class="item" data-id="{{result.id}}" data-count="{{result.count}}">
+          <td class="thumbnail">
+            <img src="{{result.thumbnail}}" alt="" width="75px">
+          </td>
+          <td class="title">{{result.title}}</td>
+          <td class="price">{{result.price}}</td>
+          <td class="count">{{result.count}}</td>
+          <td class="total">{{result.price * result.count}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table> 
+  </div>
+
+  <form id="purchase-form" action="/purchase/result" method="post">
+    <fieldset>
+      <legend style="font-weight: bold;">주문결제</legend>
+      <!-- bookItem id, count, status 저장용 hidden input -->
+      <input type="hidden" id="bookId" name="bookId" />
+      <input type="hidden" id="bookCount" name="bookCount" />
+      <input type="hidden" id="isCart" name="isCart" value="{{isCart}}" />
+      
+      <button onclick="popUpAddress(); return false;">우편번호 선택</button>
+      <br />
+      <label for="zipCode">우편번호: </label>
+      <input id="zipCode" name="zipCode" type="text" readonly required />
+      <br />
+      <label for="address">기본주소: </label>
+      <input id="address" name="address" type="text" readonly required />
+      <br />
+      <label for="detailAddress">상세주소: </label>
+      <input id="detailAddress" name="detailAddress" type="text" readonly required />
+      <br /><br />
+      <button onclick="popUpCard(); return false;">카드 선택</button>
+      <br />
+      <label for="number">카드번호: </label>
+      <input id="number" name="number" type="text" readonly required />
+      <br />
+      <label for="expirationDate">만료일자: </label>
+      <input id="expirationDate" name="expirationDate" type="text" readonly required />
+      <br />
+      <label for="company">카드사명: </label>
+      <input id="company" name="company" type="text" readonly required />
+      <br /><br />
+      <div id="total">
+        <label for="totalCount">수량: </label>
+        <input id="totalCount" name="totalCount" readonly required />
+        권
+        <br />
+        <label for="totalPrice">가격: </label>
+        <input id="totalPrice" name="totalPrice" readonly required />
+        원
+        <br />
+        <label for="stamp">스탬프 개수: </label>
+        <input id="stamp" name="stamp" value={{stamp}} readonly required />
+        개
+        <br />
+        <label for="currentPoint">현재 적립금: </label>
+        <input type="number" id="currentPoint" name="currentPoint" value="{{point}}" readonly required />
+        원
+        <br />
+        <label for="point">사용 적립금: </label>
+        <input type="number" id="point" name="point" value="0" min="0" max="0" step="1000" required />
+        원
+        <br />
+      </div>
+      <div id="options">
+        <button type="submit">구매하기</button>
+        <button onclick="initialize(); return false;">초기화</button>
+      </div>
+    </fieldset>
+  </form>
+{% endblock %}
+
+{% block script %}
+<script>
+
+  let totalCount = 0;
+  let totalPrice = 0;
+  let itemIds = [];
+  let itemCounts = [];
+  const items = document.getElementsByClassName('item');
+
+  [...items].forEach((item) => {
+    totalCount += Number(item.querySelector('.count').textContent);
+    totalPrice += Number(item.querySelector('.total').textContent);
+    itemIds.push(item.dataset.id);
+    itemCounts.push(item.dataset.count);
+  })
+
+  document.getElementById('totalCount').value = totalCount;
+  document.getElementById('totalPrice').value = totalPrice;
+  document.getElementById('bookId').value = itemIds;
+  document.getElementById('bookCount').value = itemCounts;
+
+  // 보유 스탬프가 10개 이상 시 포인트 사용 가능
+  if (Number(document.getElementById('stamp').value) >= 10) {
+    // 총 도서가격과 보유 적립금 중 더 적은 가격으로 설정
+    const currentPoint = document.getElementById('currentPoint').value;
+    const maxPoint = (Math.min(totalPrice, currentPoint) * 1000) / 1000;
+    document.getElementById('point').setAttribute('max', maxPoint);
+  }
+
+  function popUpAddress() {
+    window.open('/address', '', 'width=500, height=700, scrollbars=yes, resizable=no')
+  }
+
+  function popUpCard() {
+    window.open('/card', '', 'width=500, height=700, scrollbars=yes, resizable=no');
+  }
+
+  function initialize() {
+    const condition = 'input:not([type="hidden"], #total > input)';
+    const inputs = document.getElementById('purchase-form').querySelectorAll(condition);
+    [...inputs].forEach((input) => {
+      input.value = '';
+    })
+  }
+
+</script>
+{% endblock %}

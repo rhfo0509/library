@@ -1,0 +1,167 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <div class="header">내 장바구니</div>
+  <div id="cartInfo" class="info">
+    <table>
+      <colgroup>
+        <col style="width:10%">
+        <col style="width:15%">
+        <col style="width:25%">
+        <col style="width:10%">
+        <col style="width:10%">
+        <col style="width:10%">
+        <col style="width:20%">
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th><input type="checkbox" onClick="selectAll(this)"/></th>
+          <th>이미지</th>
+          <th>제목</th>
+          <th>판매가</th>
+          <th>수량</th>
+          <th>합계</th>
+          <th>등록일자</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in results %}
+        <tr class="cartItem" data-id="{{result.id}}">
+          <td>
+            <input type="checkbox" onclick="onClickChkbox()"/>
+          </td>
+          <td class="thumbnail">
+            <img src="{{result.Book.thumbnail}}" alt="" width="75px">
+          </td>
+          <td class="title">{{result.Book.title}}</td>
+          <td class="price">{{result.Book.price}}</td>
+          <td class="count">
+            <input 
+              type="number" 
+              value="{{result.count}}" 
+              min="1" 
+              max="{{result.Book.count}}" 
+              onkeydown="return false;"
+              oninput="onInputCount(event)"
+            />
+          </td>
+          <td class="total">{{result.Book.price * result.count}}</td>
+          <td class="addDate">{{formatDate(result.createdAt)}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div id="total">가격: 0원</div>
+    <div id="options">
+      <button class="buy" onClick="onClickBuyBtn()">구매하기</button>
+      <button class="delete" onClick="onClickDeleteBtn()">삭제하기</button>
+    </div>
+  </div>
+  
+{% endblock %}
+
+{% block script %}
+  <script>
+
+    function onInputCount(event) {
+      const count = +event.target.value;
+      const ancestor = event.target.closest('.cartItem');
+      const price = +ancestor.querySelector('.price').textContent;
+      ancestor.querySelector('.total').textContent = price * count;
+
+      onClickChkbox();
+    }
+    
+    function onClickChkbox() {
+      let total = 0;
+      const cartItems = document.getElementsByClassName('cartItem');
+
+      [...cartItems].forEach((item) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (checkbox.checked) {
+          total += Number(item.querySelector('.total').textContent);
+        }
+      })
+
+      document.getElementById('total').textContent = `가격: ${total}원`;
+    }
+
+    function selectAll(selectAll) {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = selectAll.checked;
+      })
+
+      onClickChkbox();
+    }
+
+    function onClickBuyBtn() {
+      let selected = [];
+      let counts = []; 
+      const cartItems = document.getElementsByClassName('cartItem');
+
+      [...cartItems].forEach((item) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const count = item.querySelector('input[type="number"]');
+        if (checkbox.checked) {
+          selected.push(+item.dataset.id);
+          counts.push(+count.value);
+        }
+      })
+
+      axios.post("/purchase", {
+        selected,
+        counts,
+      })
+        .then(() => {
+          location.href = '/purchase'
+        })
+        .catch((err) => {
+          console.error(err);
+        })
+    }
+
+    function onClickDeleteBtn() {
+      let selected = [];
+      const cartItems = document.getElementsByClassName('cartItem');
+
+      [...cartItems].forEach((item) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (checkbox.checked) {
+          selected.push(+item.dataset.id);
+        }
+      })
+
+      axios.delete("/cart", {
+        data: {
+          selected,
+        }
+      })
+        .then((result) => {
+          location.href = `/cart?status=${result.data}`
+        })
+        .catch((err) => {
+          console.error(err);
+        })
+    }
+
+    window.onload = () => {
+      if (new URL(location.href).searchParams.get("status") === "deleted") {
+        alert('선택한 도서의 삭제가 완료되었습니다.');
+        location.href = '/cart';
+      }
+
+      if (new URL(location.href).searchParams.get('status') === "success") {
+        alert('성공적으로 장바구니에 담았습니다.');
+        history.back();
+      }
+
+      if (new URL(location.href).searchParams.get('status') === "fail") {
+        alert('재고 초과로 장바구니에 담지 못했습니다.');
+        history.back();
+      }
+    }
+  </script>
+{% endblock %}

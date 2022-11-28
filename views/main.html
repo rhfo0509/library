@@ -1,0 +1,145 @@
+{% extends 'layout.html' %} 
+
+{% block content %}
+  <form class="search-form" action="/search" method="get">
+    <input
+      type="text"
+      id="bookName"
+      name="bookName"
+      placeholder="도서명을 입력하세요"
+    />
+    <button type="submit">검색</button>
+  </form>
+  {% if results %} 
+    <div class="header">검색 결과</div>
+    {% for book, like in results %}
+    <div class="book" data-id="{{book.id}}" data-count="{{book.count}}">
+      <div class="title">{{book.title}}</div>
+      <div class="details">
+        <div class="thumbnail">
+          <a href="{{book.details}}" target="_blank">
+            <img src="{{book.thumbnail}}" alt="도서 이미지" style="width: 150px;"/>
+          </a>
+        </div>
+        <div class="contents">
+          <div class="publisher"><span>출판사</span>{{book.publisher}}</div>
+          <div class="authors"><span>저자</span>{{book.authors}}</div>
+          <div class="price"><span>가격</span>{{book.price}}</div>
+          <div class="count"><span>남은 수량</span>{{book.count}}</div>
+        </div>
+      </div>
+      <div class="options">
+        <div class="buy">바로구매</div>
+        <div class="cart">장바구니</div>
+        <div class="review">리뷰보기</div>
+        {% if like.id %}
+          <div class="unlike">❤️ {{book.likes}}</div>
+        {% else %}
+          <div class="like">🤍 {{book.likes}}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %} 
+  {% endif %} 
+{% endblock %} 
+
+{% block script %}
+  <script>
+    // 장바구니 버튼을 눌렀을 때
+    [...document.getElementsByClassName("cart")].forEach((tag) => {
+      tag.addEventListener('click', (e) => {
+        const ancestor = e.currentTarget.closest(".book");
+        const bookCount = +ancestor.dataset.count;
+        if (!bookCount) {
+          alert('재고가 부족합니다.');
+          location.reload();
+        } else {
+          const bookId = +ancestor.dataset.id;
+          axios.post('/cart', { bookId })
+            .then((result) => {
+              console.log(result);
+              location.href = `/cart/?status=${result.data}`
+            })
+            .catch((err) => {
+              console.error(err);
+            })
+        }
+      })
+    });
+
+    // 구매하기 버튼을 눌렀을 때
+    [...document.getElementsByClassName("buy")].forEach((tag) => {
+      tag.addEventListener('click', (e) => {
+        const ancestor = e.currentTarget.closest(".book");
+        const bookId = Number(ancestor.dataset.id);
+        axios.post("/purchase", {
+          bookId,
+        })
+          .then((result) => {
+            console.log(result);
+            location.href = '/purchase'
+          })
+          .catch((err) => {
+            console.error(err);
+          })
+      })
+    });
+
+    // 좋아요 버튼을 눌렀을 때
+    [...document.getElementsByClassName("like")].forEach((tag) => {
+      tag.addEventListener('click', (e) => {
+        const ancestor = e.currentTarget.closest(".book");
+        const bookId = Number(ancestor.dataset.id);
+        axios.post("/likes", {
+          bookId,
+        })
+          .then((result) => {
+            if (result.data === 'success') {
+              alert('성공적으로 좋아요를 눌렀습니다.');
+              location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+          })
+      })
+    });
+
+    // 좋아요를 취소하였을 때
+    [...document.getElementsByClassName("unlike")].forEach((tag) => {
+      tag.addEventListener('click', (e) => {
+        const ancestor = e.currentTarget.closest(".book");
+        const bookId = Number(ancestor.dataset.id);
+        axios.post("/likes", {
+          bookId,
+        })
+          .then((result) => {
+            if (result.data === 'success') {
+              alert('좋아요를 취소하였습니다.');
+              location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+          })
+      })
+    });
+
+    // 리뷰하기 버튼을 눌렀을 때
+    [...document.getElementsByClassName("review")].forEach((tag) => {
+      tag.addEventListener('click', (e) => {
+        const ancestor = e.currentTarget.closest(".book");
+        const bookId = Number(ancestor.dataset.id);
+        axios.get("/reviews", {
+          params: { bookId },
+        })
+          .then(() => {
+            location.href = `/reviews?bookId=${bookId}`
+          })
+          .catch((err) => {
+            console.error(err);
+          })
+      })
+    });
+  </script>
+{% endblock %}

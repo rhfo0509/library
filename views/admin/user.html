@@ -1,0 +1,76 @@
+{% extends 'layout.html' %} {% block content %}
+<form class="search-form" action="/admin/user" method="get">
+  <input type="text" id="id" name="id" placeholder="사용자 ID를 입력하세요" />
+  <button type="submit">검색</button>
+</form>
+
+<form class="edit-form" action="/admin/user" method="put"></form>
+
+<div class="header">검색 결과</div>
+<div id="userInfo" class="info">
+  <table>
+    <colgroup>
+      <col style="width: 20%" />
+      <col style="width: 10%" />
+      <col style="width: 10%" />
+      <col style="width: 15%" />
+      <col style="width: 10%" />
+      <col style="width: 25%" />
+      <col style="width: 10%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>이름</th>
+        <th>스탬프</th>
+        <th>포인트</th>
+        <th>등급</th>
+        <th>생성일자</th>
+        <th>선택</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr class="user-admin">
+        <td class="id">{{user.id}}</td>
+        <td class="name">{{user.name}}</td>
+        <td class="stamp">{{user.stamp}}</td>
+        <td class="point">{{user.point}}</td>
+        <td class="grade">{{user.grade}}</td>
+        <td class="createdAt">{{formatDate(user.createdAt)}}</td>
+        <td class="select">
+          <button class="delete" onClick="onClickDelete(event)">삭제</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %} {% block script %}
+<script>
+  function onClickDelete(event) {
+    if (confirm("정말 삭제하시겠습니까?")) {
+      const ancestor = event.target.closest('.user-admin');
+      axios
+        .delete("/admin/user", {
+          data: {
+            id: +ancestor.querySelector(".id").textContent,
+          },
+        })
+        .then((result) => {
+          location.href = `/admin/user?status=${result.data}`;
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }
+
+  window.onload = () => {
+    if (new URL(location.href).searchParams.get("status") === "deleted") {
+      alert("선택한 도서의 삭제가 완료되었습니다.");
+      location.href = "/admin/user";
+    }
+  };
+</script>
+{% endblock %}
