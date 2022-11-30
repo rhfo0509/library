@@ -43,7 +43,7 @@ router.post("/signup", isNotLoggedIn, async (req, res, next) => {
       })
   
       await UserCoupon.create({
-        extinctionDate: new Date(now.setMonth(now.getMonth() + 1)),
+        extinctionDate: new Date(now.setMonth(now.getMonth())),
         status: true,
         couponId: 2,
         userId: newUser.id,

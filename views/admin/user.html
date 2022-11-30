@@ -31,7 +31,7 @@
     </thead>
     <tbody>
       {% for user in users %}
-      <tr class="user-admin">
+      <tr class="user-admin" data-id="{{user.id}}">
         <td class="id">{{user.id}}</td>
         <td class="name">{{user.name}}</td>
         <td class="stamp">{{user.stamp}}</td>
@@ -54,7 +54,7 @@
       axios
         .delete("/admin/user", {
           data: {
-            id: +ancestor.querySelector(".id").textContent,
+            id: ancestor.dataset.id,
           },
         })
         .then((result) => {
@@ -68,7 +68,7 @@
 
   window.onload = () => {
     if (new URL(location.href).searchParams.get("status") === "deleted") {
-      alert("선택한 도서의 삭제가 완료되었습니다.");
+      alert("선택한 유저의 삭제가 완료되었습니다.");
       location.href = "/admin/user";
     }
   };

@@ -6,6 +6,7 @@ const passport = require("passport");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const nunjucks = require("nunjucks");
+const methodOverride = require('method-override');
 
 dotenv.config();
 const pageRouter = require("./routes/page");
@@ -50,6 +51,8 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+// HTML form 에서 PUT 요청을 수행하기 위해 method-override 패키지로 가짜 PUT을 생성
+app.use(methodOverride('_method'));
 
 app.use("/", pageRouter);
 app.use("/auth", authRouter);

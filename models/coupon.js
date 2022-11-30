@@ -65,7 +65,7 @@ module.exports = class Coupon extends Sequelize.Model {
     db.Coupon.hasMany(db.UserCoupon, {
       foreignKey: "couponId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
   }
 };

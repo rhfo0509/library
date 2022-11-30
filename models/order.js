@@ -74,6 +74,6 @@ module.exports = class Order extends Sequelize.Model {
 
   static associate(db) {
     db.Order.belongsTo(db.User, { foreignKey: "userId", targetKey: "id" });
-    db.Order.hasMany(db.OrderItem, { foreignKey: "orderId", sourceKey: "id" });
+    db.Order.hasMany(db.OrderItem, { foreignKey: "orderId", sourceKey: "id", onDelete: "cascade" });
   }
 };

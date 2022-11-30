@@ -15,9 +15,11 @@ const {
   Review,
   sequelize,
 } = require("../models");
-const { Op, Sequelize, where, fn } = require("sequelize");
+const { Op, fn } = require("sequelize");
 
 const router = express.Router();
+
+// 공통 라우터 : 사용자 정보 및 날짜 포맷 함수를 res.locals에 저장
 
 router.use((req, res, next) => {
   res.locals.user = req.user;
@@ -28,15 +30,63 @@ router.use((req, res, next) => {
   next();
 });
 
+// 회원가입 페이지 렌더링 라우터
+
 router.get("/signup", isNotLoggedIn, (req, res) => {
   res.render("signup", { title: "회원가입" });
 });
+
+// 로그인 페이지 렌더링 라우터
 
 router.get("/login", isNotLoggedIn, (req, res) => {
   res.render("login", { title: "로그인" });
 });
 
-router.post("/reviews/create", isLoggedIn, async (req, res, next) => {
+// 리뷰 수정 라우터 (review.html 에서 수정하기 버튼 클릭)
+
+router.put("/reviews", isLoggedIn, async (req, res, next) => {
+  const { rate, prevRate, contents, bookId } = req.body;
+
+  await Review.update(
+    {
+      rate: +rate,
+      contents,
+    },
+    {
+      where: {
+        userId: req.user.id,
+        bookId: +bookId,
+      },
+    }
+  );
+
+  const book = await Book.findOne({
+    raw: true,
+    where: {
+      id: bookId,
+    },
+  });
+
+  const { countRate, avgRate } = book;
+
+  // 변경된 점수를 반영하여 평점 업데이트
+  Book.update(
+    {
+      avgRate: fn(
+        "ROUND",
+        (avgRate * countRate - +prevRate + +rate) / countRate,
+        2
+      ),
+    },
+    { where: { id: bookId } }
+  );
+
+  res.redirect("back");
+});
+
+// 리뷰 작성 라우터 (review.html에서 작성 버튼 클릭)
+
+router.post("/reviews", isLoggedIn, async (req, res, next) => {
   const { rate, contents, bookId } = req.body;
 
   const myReview = await Review.findOne({
@@ -50,7 +100,7 @@ router.post("/reviews/create", isLoggedIn, async (req, res, next) => {
     // 내가 이미 작성한 리뷰가 있다면 작성 거부
     res.redirect(`/reviews?bookId=${bookId}&status=denied`);
   } else {
-    // 그 외 리뷰를 새로 생성한다.
+    // 그 외의 경우 리뷰를 새로 생성한다.
     const review = await Review.create({
       contents,
       rate: +rate,
@@ -58,7 +108,7 @@ router.post("/reviews/create", isLoggedIn, async (req, res, next) => {
       bookId: +bookId,
     });
 
-    // 리뷰 생성 완료 시 책의 avgCount를 1 증가, avgRate에 책의 평정 평균 반영
+    // 리뷰 생성 완료 시 책의 avgCount를 1 증가, avgRate에 책의 평점 반영
     await Book.increment(
       { countRate: 1 },
       {
@@ -81,6 +131,7 @@ router.post("/reviews/create", isLoggedIn, async (req, res, next) => {
     console.log(book);
     console.log("-------------------------------------------------");
 
+    // 책에서 참여자수, 평점을 가져와 이를 토대로 평점 반영
     const { countRate, avgRate } = book;
 
     Book.update(
@@ -98,9 +149,10 @@ router.post("/reviews/create", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 리뷰보기 페이지 렌더링 라우터
+
 router.get("/reviews", isLoggedIn, async (req, res, next) => {
   const { bookId } = req.query;
-  console.log("북아이디", bookId);
   try {
     // "리뷰보기" 버튼을 선택한 책에 대한 리뷰들을 찾음
     const reviews = await Review.findAll({
@@ -146,12 +198,17 @@ router.get("/reviews", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 책 검색 시 나오는 검색결과 페이지 렌더링 라우터
+
 router.get("/search", isLoggedIn, async (req, res, next) => {
   const query = req.query.bookName;
+
+  // 검색 결과가 없을 시 메인페이지로 이동
   if (!query) {
     return res.redirect("/");
   }
   try {
+    // 도서명이 키워드를 포함하는 도서를 검색
     const books = await Book.findAll({
       raw: true,
       where: {
@@ -162,6 +219,8 @@ router.get("/search", isLoggedIn, async (req, res, next) => {
     });
 
     let results = [];
+
+    // 각 도서에 대한 좋아요와 리뷰를 검색
     for (let i = 0; i < books.length; i++) {
       const like = await Like.findOne({
         raw: true,
@@ -180,10 +239,9 @@ router.get("/search", isLoggedIn, async (req, res, next) => {
 
       let reviewResults = [];
       for (let i = 0; i < reviews.length; i++) {
-        // 리뷰 ID를
         reviewResults.push(reviews[i].id);
       }
-      console.log(reviews);
+      // 책과 그 책에 대한 좋아요, 리뷰들을 results에 push (검색된 책 개수만큼 반복)
       results.push([books[i], like, reviewResults]);
     }
 
@@ -197,6 +255,8 @@ router.get("/search", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 좋아요 버튼 누를 때 실행되는 라우터
+
 router.post("/likes", isLoggedIn, async (req, res, next) => {
   try {
     const like = await Like.findOne({
@@ -207,6 +267,8 @@ router.post("/likes", isLoggedIn, async (req, res, next) => {
       },
     });
 
+    // 이미 좋아요 버튼이 눌러져 있다면 좋아요 취소
+    // 안눌러져 있으면 좋아요
     if (like) {
       await Book.decrement(
         { likes: 1 },
@@ -245,6 +307,8 @@ router.post("/likes", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 장바구니 내 선택한 도서를 삭제하는 버튼을 클릭했을 때 실행되는 라우터
+
 router.delete("/cart", isLoggedIn, async (req, res, next) => {
   try {
     const cart = await Cart.findOne({
@@ -268,6 +332,8 @@ router.delete("/cart", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 검색 결과에서 장바구니 버튼을 클릭했을 때 실행되는 라우터
+
 router.post("/cart", isLoggedIn, async (req, res, next) => {
   try {
     const cart = await Cart.findOne({
@@ -276,7 +342,7 @@ router.post("/cart", isLoggedIn, async (req, res, next) => {
         userId: req.user.id,
       },
     });
-    console.log(cart);
+    
     const cartItem = await CartItem.findOne({
       where: {
         bookId: req.body.bookId,
@@ -294,9 +360,10 @@ router.post("/cart", isLoggedIn, async (req, res, next) => {
       });
 
       if (cartItem.count >= book.count) {
+        // 장바구니 내 도서가 현재 도서의 재고 이상이라면 실패 처리
         return res.send("fail");
       } else {
-        // 현재 장바구니 내의 도서가 재고 이상이 아니라면 count를 1 증가
+        // 그렇지 않으면 cartItem의 count를 1 증가
         CartItem.increment(
           { count: 1 },
           {
@@ -321,6 +388,8 @@ router.post("/cart", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 장바구니 페이지 렌더링 라우터
+
 router.get("/cart", isLoggedIn, async (req, res, next) => {
   CartItem.findAll({
     attributes: ["id", "count", "createdAt"],
@@ -335,7 +404,6 @@ router.get("/cart", isLoggedIn, async (req, res, next) => {
           "thumbnail",
           "count",
         ],
-        // 여기에 where문을 추가해야 하는지 테스트해보기
       },
       {
         model: Cart,
@@ -357,14 +425,11 @@ router.get("/cart", isLoggedIn, async (req, res, next) => {
     });
 });
 
-router.get("/mypage", isLoggedIn, async (req, res, next) => {
-  const orders = await Order.findAll({
-    attributes: ["id", "createdAt", "totalCount", "totalPrice", "usedPoint"],
-    where: {
-      userId: req.user.id,
-    },
-  });
+// 마이페이지 렌더링 라우터
 
+router.get("/mypage", isLoggedIn, async (req, res, next) => {
+  
+  // 이름, 등급, 포인트, 스탬프를 찾음
   const user = await User.findOne({
     raw: true,
     where: {
@@ -372,11 +437,20 @@ router.get("/mypage", isLoggedIn, async (req, res, next) => {
     },
   });
 
+  // 현재 보유중인 쿠폰 정보를 찾음
   const userCoupons = await UserCoupon.findAll({
     include: {
       model: Coupon,
       attributes: ["name", "description"],
     },
+    where: {
+      userId: req.user.id,
+    },
+  });
+
+  // user의 주문내역을 찾음
+  const orders = await Order.findAll({
+    attributes: ["id", "createdAt", "totalCount", "totalPrice", "usedPoint"],
     where: {
       userId: req.user.id,
     },
@@ -389,6 +463,8 @@ router.get("/mypage", isLoggedIn, async (req, res, next) => {
     orders,
   });
 });
+
+// 주소 선택 창에서 onClickAddrBtn을 누를 때 실행되는 라우터
 
 router.post("/address", isLoggedIn, async (req, res, next) => {
   const { zipCode, address, detailAddress } = req.body;
@@ -410,6 +486,8 @@ router.post("/address", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 주소 선택 창 렌더링 라우터
+
 router.get("/address", isLoggedIn, async (req, res, next) => {
   Address.findAll({
     attributes: ["id", "zipCode", "address", "detailAddress"],
@@ -425,9 +503,11 @@ router.get("/address", isLoggedIn, async (req, res, next) => {
     })
     .catch((err) => {
       console.error(err);
-      next(err);
+      return next(err);
     });
 });
+
+// 주소 선택 창에서 deleteAddr를 누를 때 실행되는 라우터
 
 router.delete("/address", isLoggedIn, async (req, res, next) => {
   try {
@@ -442,6 +522,8 @@ router.delete("/address", isLoggedIn, async (req, res, next) => {
     return next(err);
   }
 });
+
+// 주소 선택 창에서 onClickCardBtn을 누를 때 실행되는 라우터
 
 router.post("/card", isLoggedIn, async (req, res, next) => {
   const { number, expirationDate, company } = req.body;
@@ -463,6 +545,8 @@ router.post("/card", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 카드 선택 창 렌더링 라우터
+
 router.get("/card", isLoggedIn, async (req, res, next) => {
   Card.findAll({
     attributes: ["number", "expirationDate", "company"],
@@ -478,9 +562,11 @@ router.get("/card", isLoggedIn, async (req, res, next) => {
     })
     .catch((err) => {
       console.error(err);
-      next(err);
+      return next(err);
     });
 });
+
+// // 주소 선택 창에서 deleteCard를 누를 때 실행되는 라우터
 
 router.delete("/card", isLoggedIn, async (req, res, next) => {
   try {
@@ -495,6 +581,40 @@ router.delete("/card", isLoggedIn, async (req, res, next) => {
     return next(err);
   }
 });
+
+router.get("/coupon", isLoggedIn, async (req, res, next) => {
+  const { totalPrice } = req.query;
+  try {
+    const userCoupons = await UserCoupon.findAll({
+      raw: true,
+      attributes: ['couponId'],
+      where: {
+        extinctionDate: { [Op.lt]: new Date() },
+        userId: req.user.id,
+      }
+    })
+
+    const coupons = [];
+    for (let i = 0; i < userCoupons.length; i++) {
+      const coupon = await Coupon.findOne({
+        where: {
+          id: userCoupons[i].couponId,
+        }
+      });
+      coupons.push(coupon);
+    }
+
+    res.render("/coupon", {
+      title: "쿠폰 선택",
+      coupons,
+    })
+  } catch (err) {
+    console.error(err);
+    return next(err);
+  }
+})
+
+// 결제 창에서 구매하기 버튼을 눌렀을 때 실행되는 라우터
 
 router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
   const {
@@ -513,10 +633,13 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
     currentPoint,
     point,
   } = req.body;
+
+  // 문자열로 저장되어 있는 도서 코드와 수량을 배열로 split해 저장
   const bookIds = bookId.split(",").map((v) => Number(v));
   const bookCounts = bookCount.split(",").map((v) => Number(v));
 
-  const resultPoint = (Number(totalPrice) - point) * 0.1;
+  // 포인트는 실결제금액의 10% 적립
+  const resultPoint = (+totalPrice - point) * 0.1;
   let usedStamp = 0;
 
   try {
@@ -540,7 +663,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
     // 구매 후 stamp 및 point 적용
     await User.increment(
       {
-        stamp: Number(totalCount),
+        stamp: +totalCount,
         point: resultPoint,
       },
       {
@@ -550,6 +673,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       }
     );
 
+    // 주문내역 생성
     const order = await Order.create({
       totalCount: +totalCount,
       totalPrice: +totalPrice,
@@ -564,7 +688,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       usedStamp,
     });
 
-    // 사용자의 그동안의 결제금액에 이번 주문에서 발생한 결제금액을 추가
+    // 사용자의 그동안의 결제금액에 이번 주문에서 발생한 "실"결제금액을 추가
     await User.increment(
       {
         totalPrice: order.dataValues.totalPrice - order.dataValues.usedPoint,
@@ -575,11 +699,23 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         },
       }
     );
+    
+    // 현재 방식: 사용자의 총 결제금액이 다음 등급의 기준치를 만족하면 승급 및 쿠폰 발급
+    // 문제점: 한꺼번에 10만원 이상 구매 시 bronze->gold가 되어 sliver 혜택을 받지 못하는 현상 발생
 
-    // 사용자의 총 결제금액이 다음 등급의 기준치를 만족하면 승급 및 쿠폰 발급
-    const now = Date.now();
+    // 나중에 매 달마다 등급에 따른 쿠폰 지급으로 수정하려면 node-cron 모듈을 사용한다.
+    // 등급에 따른 쿠폰 지급 후 모든 user의 totalPrice를 0으로 초기화 (일반적인 쇼핑몰 방식)
+    const now = new Date();
 
-    if (req.user.totalPrice >= 100000 && req.user.grade === 'BRONZE') {
+    const user = await User.findOne({
+      raw: true,
+      attributes: ['totalPrice', 'grade'],
+      where: {
+        id: req.user.id
+      }
+    })
+
+    if (user.totalPrice >= 50000 && user.totalPrice < 100000) {
       await User.update(
         { grade: "SILVER" },
         {
@@ -594,7 +730,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         couponId: 3,
         userId: req.user.id,
       });
-    } else if (req.user.totalPrice >= 300000 && req.user.grade === 'SILVER') {
+    } else if (user.totalPrice >= 100000 && user.totalPrice < 300000) {
       await User.update(
         { grade: "GOLD" },
         {
@@ -609,7 +745,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         couponId: 4,
         userId: req.user.id,
       });
-    } else if (req.user.totalPrice >= 500000 && req.user.grade === 'GOLD') {
+    } else if (user.totalPrice >= 300000 && user.totalPrice < 500000) {
       await User.update(
         { grade: "PLATINUM" },
         {
@@ -624,7 +760,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         couponId: 5,
         userId: req.user.id,
       });
-    } else if (req.user.totalPrice >= 1000000 && req.user.grade === 'PLATINUM') {
+    } else if (user.totalPrice >= 500000) {
       await User.update(
         { grade: "DIAMOND" },
         {
@@ -641,6 +777,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       });
     }
 
+    // 주문내역에 들어가는 도서 정보를 담을 OrderItem 생성
     for (let i = 0; i < bookIds.length; i++) {
       const orderItem = await OrderItem.create({
         count: bookCounts[i],
@@ -686,6 +823,8 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 마이페이지에서 주문취소 버튼 클릭 시 실행되는 라우터
+
 router.post("/purchase/withdraw", isLoggedIn, async (req, res, next) => {
   const { orderId } = req.body;
 
@@ -696,7 +835,6 @@ router.post("/purchase/withdraw", isLoggedIn, async (req, res, next) => {
         id: orderId,
       },
     });
-    console.log(order);
 
     // 사용자가 "사용한" 적립금 및 스탬프 복구
     await User.increment(
@@ -711,11 +849,12 @@ router.post("/purchase/withdraw", isLoggedIn, async (req, res, next) => {
       }
     );
 
-    // 사용자에게 "적립된" 적립금 및 스탬프 삭제
+    // 사용자에게 "적립된" 적립금 및 스탬프, 총 구매금액 삭제
     await User.decrement(
       {
         stamp: order.totalCount,
-        point: (Number(order.totalPrice) - Number(order.usedPoint)) * 0.1,
+        point: (+order.totalPrice - +order.usedPoint) * 0.1,
+        totalPrice: order.totalPrice - order.usedPoint,
       },
       {
         where: {
@@ -731,6 +870,7 @@ router.post("/purchase/withdraw", isLoggedIn, async (req, res, next) => {
       },
     });
 
+    // 주문정보 삭제
     await Order.destroy({
       where: {
         id: orderId,
@@ -744,7 +884,8 @@ router.post("/purchase/withdraw", isLoggedIn, async (req, res, next) => {
   }
 });
 
-// 수정해야 할 부분
+// 마이페이지에서 상세보기 버튼 클릭 시 실행되는 라우터
+
 router.get("/purchase/detail", isLoggedIn, async (req, res, next) => {
   const { orderId } = req.query;
   const results = [];
@@ -756,7 +897,6 @@ router.get("/purchase/detail", isLoggedIn, async (req, res, next) => {
         id: orderId,
       },
     });
-    console.log(order);
 
     const orderItems = await OrderItem.findAll({
       raw: true,
@@ -775,7 +915,6 @@ router.get("/purchase/detail", isLoggedIn, async (req, res, next) => {
       results.push([orderItems[i], book]);
     }
 
-    console.log("results", results);
     res.render("detail", {
       title: "상세정보",
       order,
@@ -902,6 +1041,8 @@ router.get("/purchase", isLoggedIn, async (req, res, next) => {
     point: req.user.point,
   });
 });
+
+// 메인페이지 렌더링 라우터 (관리자/일반)
 
 router.get("/", (req, res) => {
   if (req.user?.grade === "ADMIN") {

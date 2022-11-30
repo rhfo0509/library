@@ -15,6 +15,7 @@ router.use((req, res, next) => {
 });
 
 router.delete("/user", isLoggedIn, async (req, res, next) => {
+  console.log(req.body);
   try {
     await User.destroy({
       where: {

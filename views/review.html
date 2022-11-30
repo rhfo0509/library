@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-  <form action="/reviews/create" method="post">
+  <form action="/reviews" method="post">
     <h3>리뷰 작성하기</h3>
     <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
     평점: <input type="number" id="rate" name="rate" min="1" max="5" />
@@ -12,20 +12,24 @@
   </form>
 
   <div id="myReview">
-    <h3>내가 작성한 리뷰</h3>
-    <span>{{myReview.rate}}</span>
-    |
-    <span>{{myReview.contents}}</span>
-    |
-    <button onclick="onClickEdit(event)">수정하기</button>
-    <form action="/reviews/edit" method="put">
-      <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
-      평점: <input type="number" id="rate" name="rate" min="1" max="5" />
-      <br />
-      리뷰: <textarea id="contents" name="contents" cols="50" rows="5"></textarea>
-      <br />
-      <button>작성</button>
-    </form>
+    {% if myReview %}
+      <h3>내가 작성한 리뷰</h3>
+      <span>{{myReview.rate}}</span>
+      |
+      <span>{{myReview.contents}}</span>
+      |
+      <button onclick="onClickEdit(event)">수정하기</button>
+      <!-- ?_method=PUT을 통해 put method(fake)로 받아들이도록 한다. -->
+      <form action="/reviews?_method=PUT" method="post" style="display: none;">
+        <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
+        <input type="hidden" id="previousRate" name="prevRate" value="{{myReview.rate}}" />
+        평점: <input type="number" id="rate" name="rate" min="1" max="5" value="{{myReview.rate}}"/>
+        <br />
+        리뷰: <textarea id="contents" name="contents" cols="50" rows="5">{{myReview.contents}}</textarea>
+        <br />
+        <button>작성</button>
+      </form>
+    {% endif %}
   </div>
 
   <div id="reviewList">
@@ -48,7 +52,14 @@
 {% block script %}
 <script>
   function onClickEdit(event) {
-
+    const editForm = event.target.nextElementSibling;
+    if (event.target.textContent === '수정하기') {
+      editForm.style.display = 'block';
+      event.target.textContent = '수정 취소';
+    } else {
+      editForm.style.display = 'none';
+      event.target.textContent = '수정하기';
+    }
   }
 
   window.onload = () => { 

@@ -70,32 +70,32 @@ module.exports = class User extends Sequelize.Model {
     db.User.hasOne(db.Cart, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.User.hasMany(db.Card, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.User.hasMany(db.Address, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.User.hasMany(db.Order, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.User.hasMany(db.Like, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.User.hasMany(db.Review, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
   }
 };

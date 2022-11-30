@@ -76,22 +76,22 @@ module.exports = class Book extends Sequelize.Model {
     db.Book.hasMany(db.CartItem, {
       foreignKey: "bookId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.Book.hasMany(db.OrderItem, {
       foreignKey: "bookId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.Book.hasMany(db.Like, {
       foreignKey: "bookId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
     db.Book.hasMany(db.Review, {
       foreignKey: "bookId",
       sourceKey: "id",
-      onDelete: "CASCADE",
+      onDelete: "cascade",
     });
   }
 };
