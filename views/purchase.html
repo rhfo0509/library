@@ -40,10 +40,9 @@
   <form id="purchase-form" action="/purchase/result" method="post">
     <fieldset>
       <legend style="font-weight: bold;">주문결제</legend>
-      <!-- bookItem id, count, status 저장용 hidden input -->
+      <!-- bookItem id, count 저장용 hidden input -->
       <input type="hidden" id="bookId" name="bookId" />
       <input type="hidden" id="bookCount" name="bookCount" />
-      <input type="hidden" id="isCart" name="isCart" value="{{isCart}}" />
       
       <button onclick="popUpAddress(); return false;">우편번호 선택</button>
       <br />
@@ -128,6 +127,8 @@
     const maxPoint = (Math.min(totalPrice, currentPoint) * 1000) / 1000;
     document.getElementById('point').setAttribute('max', maxPoint);
   }
+
+
 
   function popUpAddress() {
     window.open('/address', '', 'width=500, height=700, scrollbars=yes, resizable=no')

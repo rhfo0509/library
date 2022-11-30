@@ -13,10 +13,6 @@ module.exports = class UserCoupon extends Sequelize.Model {
           type: Sequelize.DATE,
           allowNull: false,
         },
-        status: {
-          type: Sequelize.BOOLEAN,
-          allowNull: false,
-        },
       },
       {
         sequelize,

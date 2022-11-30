@@ -10,17 +10,15 @@
   <div id="myCouponList">
     <h3>보유중인 쿠폰</h3>
     {% for userCoupon in userCoupons %}
-      {% if userCoupon.status == true %}
-        <div class="myCoupon" style="font-size: 14px;">
-          <span>{{userCoupon.Coupon.name}}</span>
-          |
-          <span>{{userCoupon.Coupon.description}}</span>
-          |
-          발급일: <span>{{formatDate(userCoupon.issuanceDate)}}</span>
-          |
-          만료일: <span>{{formatDate(userCoupon.extinctionDate)}}</span>
-        </div>
-      {% endif %}
+      <div class="myCoupon" style="font-size: 14px;">
+        <span>{{userCoupon.Coupon.name}}</span>
+        |
+        <span>{{userCoupon.Coupon.description}}</span>
+        |
+        발급일: <span>{{formatDate(userCoupon.issuanceDate)}}</span>
+        |
+        만료일: <span>{{formatDate(userCoupon.extinctionDate)}}</span>
+      </div>
     {% endfor %}
   </div>
   <div class="header">{{user.name}}님의 결제내역</div>

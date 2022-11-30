@@ -70,14 +70,15 @@
     // 구매하기 버튼을 눌렀을 때
     [...document.getElementsByClassName("buy")].forEach((tag) => {
       tag.addEventListener('click', (e) => {
-        const ancestor = e.currentTarget.closest(".book");
-        const bookId = Number(ancestor.dataset.id);
-        axios.post("/purchase", {
-          bookId,
+        const ancestor = e.target.closest(".book");
+        const bookId = +ancestor.dataset.id;
+        axios.get("/purchase", {
+          params: {
+            bookId,
+          }
         })
           .then((result) => {
-            console.log(result);
-            location.href = '/purchase'
+            location.href = `/purchase?bookId=${bookId}`
           })
           .catch((err) => {
             console.error(err);

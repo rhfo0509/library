@@ -332,6 +332,31 @@ router.delete("/cart", isLoggedIn, async (req, res, next) => {
   }
 });
 
+// 장바구니에서 구매하기 버튼을 클릭했을 때 변경된 개수를 반영하는 라우터
+
+router.put("/cart", isLoggedIn, async (req, res, next) => {
+  const { selected, counts } = req.body;
+  try {
+    for (let i = 0; i < selected.length; i++) {
+      await CartItem.update(
+        {
+          count: counts[i],
+        },
+        {
+          where: {
+            id: selected[i],
+          }
+        }
+      )
+    }
+
+    res.send('success');
+  } catch (err) {
+    console.error(err);
+    return next(err);
+  }
+})
+
 // 검색 결과에서 장바구니 버튼을 클릭했을 때 실행되는 라우터
 
 router.post("/cart", isLoggedIn, async (req, res, next) => {
@@ -726,7 +751,6 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       );
       await UserCoupon.create({
         extinctionDate: new Date(now.setMonth(now.getMonth() + 1)),
-        status: true,
         couponId: 3,
         userId: req.user.id,
       });
@@ -741,7 +765,6 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       );
       await UserCoupon.create({
         extinctionDate: new Date(now.setMonth(now.getMonth() + 1)),
-        status: true,
         couponId: 4,
         userId: req.user.id,
       });
@@ -756,7 +779,6 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       );
       await UserCoupon.create({
         extinctionDate: new Date(now.setMonth(now.getMonth() + 1)),
-        status: true,
         couponId: 5,
         userId: req.user.id,
       });
@@ -771,7 +793,6 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       );
       await UserCoupon.create({
         extinctionDate: new Date(now.setMonth(now.getMonth() + 1)),
-        status: true,
         couponId: 6,
         userId: req.user.id,
       });
@@ -926,36 +947,33 @@ router.get("/purchase/detail", isLoggedIn, async (req, res, next) => {
   }
 });
 
-router.post("/purchase", isLoggedIn, async (req, res, next) => {
-  // 바로구매의 경우
-  if (req.body.bookId) {
-    req.session.isCart = "N";
+// 구매페이지 렌더링 라우터
 
+router.get("/purchase", isLoggedIn, async (req, res, next) => {
+  // html에서 for문으로 표현하기 위해 results 배열에 담아 전송
+  const results = [];
+  const { bookId, selected } = req.query;
+
+  // 바로구매하는 경우
+  if (bookId) {
     Book.findOne({
       raw: true,
       attributes: ["id", "title", "price", "thumbnail"],
       where: {
-        id: req.body.bookId,
+        id: +req.query.bookId,
       },
     })
-      .then((result) => {
-        const results = [];
-        result.count = 1;
-        results.push(result);
-        // GET /purchase 할 때 전송할 데이터를
-        // req.session에 담아 전송
-        req.session.results = results;
-        res.redirect("/purchase");
+      .then((book) => {  
+        book.count = 1;
+        results.push(book);
       })
       .catch((err) => {
         console.error(err);
         return next(err);
       });
-  }
-  // 장바구니에서 구매하는 경우
-  if (req.body.selected) {
-    req.session.isCart = "Y";
-
+  } 
+    // 장바구니에서 구매하는 경우
+  if (selected) {
     const cart = await Cart.findOne({
       raw: true,
       where: {
@@ -963,63 +981,44 @@ router.post("/purchase", isLoggedIn, async (req, res, next) => {
       },
     });
 
-    // 장바구니에서 선택한 수량대로 cartItem update
-    for (let i = 0; i < req.body.selected.length; i++) {
-      await CartItem.update(
-        {
-          count: req.body.counts[i],
-        },
-        {
-          where: {
-            id: req.body.selected[i],
-          },
-        }
-      );
-    }
-
     Book.findAll({
       raw: true,
       attributes: ["id", "title", "price", "thumbnail"],
       include: {
         model: CartItem,
-        attributes: ["id", "count"],
+        attributes: ["count"],
         where: {
-          id: req.body.selected,
+          id: selected.split(',').map((v) => Number(v)),
           cartId: cart.id,
         },
       },
     })
-      .then((results) => {
-        console.log("---------------------------------------");
-        console.log(results);
-        console.log("---------------------------------------");
-        results.forEach((result) => {
-          // "CartItems.id/CartItem.count"는 nunjucks에서 받을 수 없음
-          // .(dot)으로 속성을 받을 수 있도록 재정의
-          result.cartId = result["CartItems.id"];
-          result.count = result["CartItems.count"];
-        });
-        req.session.results = results;
-        res.redirect("/purchase");
+      .then((books) => {
+        books.forEach((book) => {
+          book.count = book["CartItems.count"];
+          delete book["CartItems.count"];
+          results.push(book);
+        })
+        console.log('-------------구매 책 정보----------------');
+        console.log(books);
+        console.log('-----------------------------------------');
       })
       .catch((err) => {
         console.error(err);
         return next(err);
-      });
+      })
   }
-});
 
-router.get("/purchase", isLoggedIn, async (req, res, next) => {
-  const { results, isCart } = req.session;
-
+  // 유효기간이 지나지 않은 쿠폰만 검색
   const userCoupons = await UserCoupon.findAll({
     raw: true,
+    attributes: ['couponId'],
     where: {
+      extinctionDate: { [Op.gt]: new Date() },
       userId: req.user.id,
-    },
-  });
+    }
+  })
 
-  console.log(userCoupons);
   let coupons = [];
   for (let i = 0; i < userCoupons.length; i++) {
     const coupon = await Coupon.findOne({
@@ -1030,13 +1029,18 @@ router.get("/purchase", isLoggedIn, async (req, res, next) => {
     });
     coupons.push(coupon);
   }
+  console.log("-----------사용가능한 쿠폰-------------");
   console.log(coupons);
+  console.log("---------------------------------------");
+
+  console.log("---------------------------------------");
+  console.log(results);
+  console.log("---------------------------------------");
 
   res.render("purchase", {
     title: "주문하기",
     results,
     coupons,
-    isCart,
     stamp: req.user.stamp,
     point: req.user.point,
   });

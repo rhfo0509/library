@@ -111,12 +111,15 @@
         }
       })
 
-      axios.post("/purchase", {
+      // 우선 cartItem의 증감된 개수를 반영
+      axios.put("/cart", {
         selected,
         counts,
       })
-        .then(() => {
-          location.href = '/purchase'
+        .then((result) => {
+          if (result.data === 'success') {
+            location.href = `/purchase?selected=${selected}`;
+          }
         })
         .catch((err) => {
           console.error(err);
