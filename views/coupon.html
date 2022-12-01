@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+  </head>
+  <body>
+    {% block content %}
+      <div id="couponInfo">
+        {% for coupon in coupons %}
+          <div class="coupon">
+            <input type="radio" name="coupon" />
+            <span>{{coupon.name}}</span>
+            |
+            <span>{{coupon.description}}</span>
+            <!-- 쿠폰 정보 저장용 hidden input -->
+            <input type="hidden" class="couponId" value="{{coupon.id}}" />
+            <input type="hidden" class="discountRate" value="{{coupon.discountRate}}" />
+            <input type="hidden" class="discountPrice" value="{{coupon.discountPrice}}" />
+            <input type="hidden" class="minPrice" value="{{coupon.minPrice}}" />
+          </div>
+        {% endfor %}
+      </div>
+      <button onclick="onClickCouponBtn()">쿠폰 선택</button>
+    {% endblock %}
+
+    {% block script %}
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+      <script>
+        function onClickCouponBtn() {
+          const couponItems = document.getElementById('couponInfo').children;
+          [...couponItems].forEach((item) => {
+            if (item.firstElementChild.checked) {
+              const name = item.children[1].textContent;
+              const description = item.children[2].textContent;
+              const couponId = item.querySelector('.couponId').value;
+              const discountRate = item.querySelector('.discountRate').value;
+              const discountPrice = item.querySelector('.discountPrice').value;
+              const minPrice = item.querySelector('.minPrice').value;
+              
+              // 할인액과 할인율에 따른 차등 적용
+              const initialPrice = opener.document.getElementById('initialPrice').value;
+              const finalPrice = opener.document.getElementById('finalPrice').value;
+              
+              if (+minPrice > +finalPrice) {
+                alert('쿠폰의 최소 사용금액이 결제금액보다 큽니다. 최소 사용금액 이상으로 구매해주시거나 적립금을 조절하세요.');
+                return;
+              }
+
+              opener.document.getElementById('couponId').value = couponId;
+              opener.document.getElementById('discountRate').value = discountRate;
+              opener.document.getElementById('discountPrice').value = discountPrice;
+              opener.document.getElementById('minPrice').value = minPrice;
+
+              // 할인율 쿠폰인 경우와 할인액 쿠폰인 경우를 분리하여 처리
+              opener.document.getElementById('finalPrice').value = discountPrice ? finalPrice - discountPrice : finalPrice * ((100 - discountRate) / 100);
+
+              opener.document.getElementById('selectedCoupon').textContent = `${name} | ${description}`;  
+
+              window.close();      
+            }
+          })
+        }
+
+        if (new URL(location.href).searchParams.get("error")) {
+          alert(new URL(location.href).searchParams.get("error"));
+          history.back();
+        }
+      </script>
+    {% endblock %}
+  </body>
+</html>

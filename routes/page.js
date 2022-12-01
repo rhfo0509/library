@@ -345,17 +345,17 @@ router.put("/cart", isLoggedIn, async (req, res, next) => {
         {
           where: {
             id: selected[i],
-          }
+          },
         }
-      )
+      );
     }
 
-    res.send('success');
+    res.send("success");
   } catch (err) {
     console.error(err);
     return next(err);
   }
-})
+});
 
 // 검색 결과에서 장바구니 버튼을 클릭했을 때 실행되는 라우터
 
@@ -367,7 +367,7 @@ router.post("/cart", isLoggedIn, async (req, res, next) => {
         userId: req.user.id,
       },
     });
-    
+
     const cartItem = await CartItem.findOne({
       where: {
         bookId: req.body.bookId,
@@ -453,7 +453,6 @@ router.get("/cart", isLoggedIn, async (req, res, next) => {
 // 마이페이지 렌더링 라우터
 
 router.get("/mypage", isLoggedIn, async (req, res, next) => {
-  
   // 이름, 등급, 포인트, 스탬프를 찾음
   const user = await User.findOne({
     raw: true,
@@ -608,36 +607,40 @@ router.delete("/card", isLoggedIn, async (req, res, next) => {
 });
 
 router.get("/coupon", isLoggedIn, async (req, res, next) => {
-  const { totalPrice } = req.query;
   try {
+    // 유효기간이 지나지 않은 쿠폰만 검색
     const userCoupons = await UserCoupon.findAll({
       raw: true,
-      attributes: ['couponId'],
+      attributes: ["couponId"],
       where: {
-        extinctionDate: { [Op.lt]: new Date() },
+        extinctionDate: { [Op.gt]: new Date() },
         userId: req.user.id,
-      }
-    })
+      },
+    });
 
-    const coupons = [];
+    let coupons = [];
     for (let i = 0; i < userCoupons.length; i++) {
       const coupon = await Coupon.findOne({
+        raw: true,
         where: {
           id: userCoupons[i].couponId,
-        }
+        },
       });
       coupons.push(coupon);
     }
+    console.log("-----------사용가능한 쿠폰-------------");
+    console.log(coupons);
+    console.log("---------------------------------------");
 
-    res.render("/coupon", {
+    res.render("coupon", {
       title: "쿠폰 선택",
       coupons,
-    })
+    });
   } catch (err) {
     console.error(err);
     return next(err);
   }
-})
+});
 
 // 결제 창에서 구매하기 버튼을 눌렀을 때 실행되는 라우터
 
@@ -650,10 +653,10 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
     expirationDate,
     company,
     totalCount,
-    totalPrice,
+    finalPrice,
     bookId,
     bookCount,
-    isCart,
+    status,
     stamp,
     currentPoint,
     point,
@@ -663,8 +666,8 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
   const bookIds = bookId.split(",").map((v) => Number(v));
   const bookCounts = bookCount.split(",").map((v) => Number(v));
 
-  // 포인트는 실결제금액의 10% 적립
-  const resultPoint = (+totalPrice - point) * 0.1;
+  // 포인트는 실결제금액(포인트 및 쿠폰이 적용된 금액)의 10% 적립
+  const resultPoint = +finalPrice * 0.1;
   let usedStamp = 0;
 
   try {
@@ -701,7 +704,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
     // 주문내역 생성
     const order = await Order.create({
       totalCount: +totalCount,
-      totalPrice: +totalPrice,
+      totalPrice: +finalPrice,
       zipCode,
       address,
       detailAddress,
@@ -713,10 +716,10 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       usedStamp,
     });
 
-    // 사용자의 그동안의 결제금액에 이번 주문에서 발생한 "실"결제금액을 추가
+    // 사용자의 그동안의 결제금액에 이번 주문에서 발생한 실결제금액을 추가
     await User.increment(
       {
-        totalPrice: order.dataValues.totalPrice - order.dataValues.usedPoint,
+        totalPrice: +finalPrice,
       },
       {
         where: {
@@ -724,23 +727,23 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         },
       }
     );
-    
+
     // 현재 방식: 사용자의 총 결제금액이 다음 등급의 기준치를 만족하면 승급 및 쿠폰 발급
     // 문제점: 한꺼번에 10만원 이상 구매 시 bronze->gold가 되어 sliver 혜택을 받지 못하는 현상 발생
 
     // 나중에 매 달마다 등급에 따른 쿠폰 지급으로 수정하려면 node-cron 모듈을 사용한다.
-    // 등급에 따른 쿠폰 지급 후 모든 user의 totalPrice를 0으로 초기화 (일반적인 쇼핑몰 방식)
+    // 월별 등급에 따른 쿠폰 지급 후 모든 user의 totalPrice를 0으로 초기화 (일반적인 쇼핑몰 방식)
     const now = new Date();
 
     const user = await User.findOne({
       raw: true,
-      attributes: ['totalPrice', 'grade'],
+      attributes: ["totalPrice", "grade"],
       where: {
-        id: req.user.id
-      }
-    })
+        id: req.user.id,
+      },
+    });
 
-    if (user.totalPrice >= 50000 && user.totalPrice < 100000) {
+    if (user.totalPrice >= 50000 && user.totalPrice < 100000 && user.grade === 'BRONZE') {
       await User.update(
         { grade: "SILVER" },
         {
@@ -754,7 +757,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         couponId: 3,
         userId: req.user.id,
       });
-    } else if (user.totalPrice >= 100000 && user.totalPrice < 300000) {
+    } else if (user.totalPrice >= 100000 && user.totalPrice < 300000 && user.grade === 'SILVER') {
       await User.update(
         { grade: "GOLD" },
         {
@@ -768,7 +771,7 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         couponId: 4,
         userId: req.user.id,
       });
-    } else if (user.totalPrice >= 300000 && user.totalPrice < 500000) {
+    } else if (user.totalPrice >= 300000 && user.totalPrice < 500000 && user.grade === 'GOLD') {
       await User.update(
         { grade: "PLATINUM" },
         {
@@ -782,15 +785,8 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
         couponId: 5,
         userId: req.user.id,
       });
-    } else if (user.totalPrice >= 500000) {
-      await User.update(
-        { grade: "DIAMOND" },
-        {
-          where: {
-            id: req.user.id,
-          },
-        }
-      );
+    } else if (user.totalPrice >= 500000 && user.grade === 'PLATINUM') {
+      await User.update({ grade: "DIAMOND" }, { where: { id: req.user.id } });
       await UserCoupon.create({
         extinctionDate: new Date(now.setMonth(now.getMonth() + 1)),
         couponId: 6,
@@ -808,19 +804,13 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
 
       // 구매한 수량만큼 책 수량 감소
       Book.decrement(
-        {
-          count: orderItem.dataValues.count,
-        },
-        {
-          where: {
-            id: bookIds[i],
-          },
-        }
+        { count: orderItem.dataValues.count },
+        { where: { id: bookIds[i] } }
       );
     }
 
     // 장바구니에서 구매한 경우 장바구니 내역을 비운다.
-    if (isCart === "Y") {
+    if (status === "C") {
       const cart = await Cart.findOne({
         raw: true,
         where: {
@@ -952,18 +942,22 @@ router.get("/purchase/detail", isLoggedIn, async (req, res, next) => {
 router.get("/purchase", isLoggedIn, async (req, res, next) => {
   // html에서 for문으로 표현하기 위해 results 배열에 담아 전송
   const results = [];
+
   const { bookId, selected } = req.query;
+  let status; // 장바구니에서 구매했으면 'C', 바로구매이면 'N'
 
   // 바로구매하는 경우
   if (bookId) {
-    Book.findOne({
+    status = "N";
+
+    await Book.findOne({
       raw: true,
       attributes: ["id", "title", "price", "thumbnail"],
       where: {
         id: +req.query.bookId,
       },
     })
-      .then((book) => {  
+      .then((book) => {
         book.count = 1;
         results.push(book);
       })
@@ -971,9 +965,11 @@ router.get("/purchase", isLoggedIn, async (req, res, next) => {
         console.error(err);
         return next(err);
       });
-  } 
-    // 장바구니에서 구매하는 경우
+  }
+  // 장바구니에서 구매하는 경우
   if (selected) {
+    status = "C";
+
     const cart = await Cart.findOne({
       raw: true,
       where: {
@@ -981,14 +977,14 @@ router.get("/purchase", isLoggedIn, async (req, res, next) => {
       },
     });
 
-    Book.findAll({
+    await Book.findAll({
       raw: true,
       attributes: ["id", "title", "price", "thumbnail"],
       include: {
         model: CartItem,
         attributes: ["count"],
         where: {
-          id: selected.split(',').map((v) => Number(v)),
+          id: selected.split(",").map((v) => Number(v)),
           cartId: cart.id,
         },
       },
@@ -998,51 +994,27 @@ router.get("/purchase", isLoggedIn, async (req, res, next) => {
           book.count = book["CartItems.count"];
           delete book["CartItems.count"];
           results.push(book);
-        })
-        console.log('-------------구매 책 정보----------------');
+        });
+        console.log("-------------구매 책 정보----------------");
         console.log(books);
-        console.log('-----------------------------------------');
+        console.log("-----------------------------------------");
       })
       .catch((err) => {
         console.error(err);
         return next(err);
-      })
+      });
   }
 
-  // 유효기간이 지나지 않은 쿠폰만 검색
-  const userCoupons = await UserCoupon.findAll({
-    raw: true,
-    attributes: ['couponId'],
-    where: {
-      extinctionDate: { [Op.gt]: new Date() },
-      userId: req.user.id,
-    }
-  })
-
-  let coupons = [];
-  for (let i = 0; i < userCoupons.length; i++) {
-    const coupon = await Coupon.findOne({
-      raw: true,
-      where: {
-        id: userCoupons[i].couponId,
-      },
-    });
-    coupons.push(coupon);
-  }
-  console.log("-----------사용가능한 쿠폰-------------");
-  console.log(coupons);
-  console.log("---------------------------------------");
-
-  console.log("---------------------------------------");
+  console.log("---------------결과----------------");
   console.log(results);
-  console.log("---------------------------------------");
+  console.log("-----------------------------------");
 
   res.render("purchase", {
     title: "주문하기",
     results,
-    coupons,
     stamp: req.user.stamp,
     point: req.user.point,
+    status,
   });
 });
 
