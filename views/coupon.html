@@ -33,17 +33,20 @@
             if (item.firstElementChild.checked) {
               const name = item.children[1].textContent;
               const description = item.children[2].textContent;
-              const couponId = item.querySelector('.couponId').value;
-              const discountRate = item.querySelector('.discountRate').value;
-              const discountPrice = item.querySelector('.discountPrice').value;
-              const minPrice = item.querySelector('.minPrice').value;
+              const couponId = +item.querySelector('.couponId').value;
+              const discountRate = +item.querySelector('.discountRate').value;
+              const discountPrice = +item.querySelector('.discountPrice').value;
+              const minPrice = +item.querySelector('.minPrice').value;
               
               // 할인액과 할인율에 따른 차등 적용
-              const initialPrice = opener.document.getElementById('initialPrice').value;
-              const finalPrice = opener.document.getElementById('finalPrice').value;
+              const initialPrice = +opener.document.getElementById('initialPrice').value;
+              const finalPrice = +opener.document.getElementById('finalPrice').value;
+
+              // 적립금을 설정한 상태에서 쿠폰을 선택하는 경우, 적립금도 반영되도록 한다.
+              const point = +opener.document.getElementById('point').value;
               
-              if (+minPrice > +finalPrice) {
-                alert('쿠폰의 최소 사용금액이 결제금액보다 큽니다. 최소 사용금액 이상으로 구매해주시거나 적립금을 조절하세요.');
+              if (minPrice > initialPrice) {
+                alert('쿠폰의 최소 사용금액이 최초 금액보다 큽니다. 최소 사용금액 이상으로 구매해주시거나 적립금을 조절하세요.');
                 return;
               }
 
@@ -53,7 +56,31 @@
               opener.document.getElementById('minPrice').value = minPrice;
 
               // 할인율 쿠폰인 경우와 할인액 쿠폰인 경우를 분리하여 처리
-              opener.document.getElementById('finalPrice').value = discountPrice ? finalPrice - discountPrice : finalPrice * ((100 - discountRate) / 100);
+              if (discountPrice) {
+                // 최종금액 = 최초금액 - 쿠폰할인액 - 사용포인트
+                opener.document.getElementById('finalPrice').value = initialPrice - discountPrice - point;
+                // 쿠폰 적용 시 최종금액이 0 미만이 된다면
+                if (opener.document.getElementById('finalPrice').value < 0) {
+                  // 최종금액이 0 이상이 되도록 사용포인트를 조절
+                  opener.document.getElementById('point').value -= 
+                    Math.abs(Math.floor(opener.document.getElementById('finalPrice').value / 1000) * 1000);
+                    // 최종금액은 0 이상의 양수가 되도록 조절
+                  opener.document.getElementById('finalPrice').value -=
+                    Math.floor(opener.document.getElementById('finalPrice').value / 1000) * 1000;
+                }
+              } else {
+                // 최종금액 = 최초금액 * ((100 - 쿠폰할인율) / 100) - 사용포인트
+                opener.document.getElementById('finalPrice').value = Math.round(initialPrice * ((100 - discountRate) / 100) - point);
+                // 쿠폰 적용 시 최종금액이 0 미만이 된다면
+                if (opener.document.getElementById('finalPrice').value < 0) {
+                  // 최종금액이 0 이상이 되도록 사용포인트를 조절
+                  opener.document.getElementById('point').value -= 
+                    Math.abs(Math.floor(opener.document.getElementById('finalPrice').value / 1000) * 1000);
+                  // 최종금액은 0 이상의 양수가 되도록 조절
+                  opener.document.getElementById('finalPrice').value -=
+                    Math.floor(opener.document.getElementById('finalPrice').value / 1000) * 1000;
+                }
+              } 
 
               opener.document.getElementById('selectedCoupon').textContent = `${name} | ${description}`;  
 

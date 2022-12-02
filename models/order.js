@@ -20,18 +20,23 @@ module.exports = class Order extends Sequelize.Model {
           type: Sequelize.INTEGER,
           allowNull: false,
         },
-        totalPrice: {
+        initialPrice: {
           type: Sequelize.INTEGER,
           allowNull: false,
         },
+        finalPrice: {
+          type: Sequelize.INTEGER,
+          allowNull: false,
+        },
+        couponId: {
+          type: Sequelize.INTEGER,
+        },
         usedPoint: {
           type: Sequelize.INTEGER,
-          allowNull: true,
           defaultValue: 0,
         },
         usedStamp: {
           type: Sequelize.INTEGER,
-          allowNull: true,
           defaultValue: 0,
         },
         cardNumber: {

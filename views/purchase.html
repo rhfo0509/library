@@ -85,11 +85,15 @@
         원
         <br />
         <label for="point">사용 적립금: </label>
-        <input type="number" id="point" name="point" value="0" min="0" max="0" step="1000" oninput="oninputPoint(event)" required />
+        <input type="number" id="point" name="point" value="0" min="0" max="0" step="1000" 
+          onkeydown="return false;" onfocus="this.oldValue = this.value;" 
+          onchange="onChangePoint(this); this.oldValue = this.value;" 
+          required 
+        />
         원
         <br />
         <label for="finalPrice">최종 금액: </label>
-        <input id="finalPrice" name="finalPrice" readonly required />
+        <input type="number" id="finalPrice" name="finalPrice" min="0" readonly required />
         원
       </div>
       <div id="coupons">
@@ -110,62 +114,96 @@
 {% endblock %}
 
 {% block script %}
-<script>
+  <script>
 
-  let totalCount = 0;
-  let initialPrice = 0;
-  let itemIds = [];
-  let itemCounts = [];
-  const items = document.getElementsByClassName('item');
+    let totalCount = 0;
+    let initialPrice = 0;
+    let itemIds = [];
+    let itemCounts = [];
+    const items = document.getElementsByClassName('item');
 
-  // DOMContentLoaded: HTML document를 전부 읽고 DOM트리를 완성하는 즉시 이벤트가 호출
-  window.addEventListener('DOMContentLoaded', () => {
-    [...items].forEach((item) => {
-      totalCount += Number(item.querySelector('.count').textContent);
-      initialPrice += Number(item.querySelector('.total').textContent);
-      itemIds.push(item.dataset.id);
-      itemCounts.push(item.dataset.count);
+    // DOMContentLoaded: HTML document를 전부 읽고 DOM 트리를 완성하는 즉시 이벤트가 호출
+    window.addEventListener('DOMContentLoaded', () => {
+      [...items].forEach((item) => {
+        totalCount += Number(item.querySelector('.count').textContent);
+        initialPrice += Number(item.querySelector('.total').textContent);
+        itemIds.push(item.dataset.id);
+        itemCounts.push(item.dataset.count);
+      })
+
+      document.getElementById('totalCount').value = totalCount;
+      document.getElementById('initialPrice').value = initialPrice;
+      document.getElementById('bookId').value = itemIds;
+      document.getElementById('bookCount').value = itemCounts;
+      // 최초 finalPrice는 initialPrice와 같다.
+      document.getElementById('finalPrice').value = initialPrice;
+
+      // 보유 스탬프가 10개 이상 시 포인트 사용 가능
+      if (Number(document.getElementById('stamp').value) >= 10) {
+        // 최종가격과 보유 적립금 중 더 적은 가격으로 설정
+        const maxPoint = (Math.min(document.getElementById('finalPrice').value, document.getElementById('currentPoint').value) * 1000) / 1000;
+        document.getElementById('point').setAttribute('max', maxPoint);
+      }
     })
 
-    document.getElementById('totalCount').value = totalCount;
-    document.getElementById('initialPrice').value = initialPrice;
-    document.getElementById('bookId').value = itemIds;
-    document.getElementById('bookCount').value = itemCounts;
-    // 최초 finalPrice는 initialPrice와 같다.
-    document.getElementById('finalPrice').value = initialPrice;
+    function onChangePoint(input) {
+      console.log(input.oldValue, input.value);
+      const point = +document.getElementById('point').value;
+      const currentPoint = +document.getElementById('currentPoint').value;
+      const discountRate = +document.getElementById('discountRate').value;
+      const discountPrice = +document.getElementById('discountPrice').value;
+      const finalPrice = +document.getElementById('finalPrice').value;
 
-    // 보유 스탬프가 10개 이상 시 포인트 사용 가능
-    if (Number(document.getElementById('stamp').value) >= 10) {
-      // 최종가격과 보유 적립금 중 더 적은 가격으로 설정
-      const currentPoint = document.getElementById('currentPoint').value;
-      const maxPoint = (Math.min(finalPrice.value, currentPoint) * 1000) / 1000;
-      document.getElementById('point').setAttribute('max', maxPoint);
+      // 포인트 조절 시 최종금액이 1000 미만이라면
+      if (document.getElementById('finalPrice').value < 1000) {
+        // 포인트를 증가한 경우 예전 값으로 되돌려 놓음
+        if (input.oldValue < input.value) {
+          input.value = input.oldValue;
+        }
+
+        // 할인율 쿠폰인 경우와 할인액 쿠폰인 경우를 분리하여 처리
+        if (discountPrice) {
+          // 최종금액 = 최초금액 - 쿠폰할인액 - 사용포인트
+          document.getElementById('finalPrice').value = initialPrice - discountPrice - input.value;
+        } else {
+          // 최종금액 = 최초금액 * ((100 - 쿠폰할인율) / 100) - 사용포인트
+          document.getElementById('finalPrice').value = initialPrice * ((100 - discountRate) / 100) - input.value;
+        }
+      } else {
+        // 할인율 쿠폰인 경우와 할인액 쿠폰인 경우를 분리하여 처리
+        if (discountPrice) {
+          // 최종금액 = 최초금액 - 쿠폰할인액 - 사용포인트
+          document.getElementById('finalPrice').value = initialPrice - discountPrice - point;
+        } else {
+          // 최종금액 = 최초금액 * ((100 - 쿠폰할인율) / 100) - 사용포인트
+          document.getElementById('finalPrice').value = initialPrice * ((100 - discountRate) / 100) - point;
+        }
+      }
     }
-  })
 
-  function oninputPoint(event) {
-    document.getElementById('finalPrice').value = initialPrice - +event.target.value;
-  }
+      // // 임의 입력
+      // if (point >= currentPoint) {
+      //   // 1. 보유 적립금보다 더 많이 입력한 경우
+      //   event.target.value = Math.floor(event.target.getAttribute('max') / 1000) * 1000;
+      // } else if (point < 0) {
+      //   // 2. 보유 적립금보다 더 적게 입력한 경우
+      //   event.target.value = 0;
+      // } else {
+      //   // 3. 천원 단위로 입력하지 않았을 경우
+      //   event.target.value = Math.floor(point / 1000) * 1000;
+      // }
 
-  function popUpCoupon() {
-    window.open('/coupon', '', 'width=500, height=700, scrollbars=yes, resizable=no');
-  }
+    function popUpCoupon() {
+      window.open('/coupon', '', 'width=500, height=700, scrollbars=yes, resizable=no');
+    }
 
-  function popUpAddress() {
-    window.open('/address', '', 'width=500, height=700, scrollbars=yes, resizable=no');
-  };
+    function popUpAddress() {
+      window.open('/address', '', 'width=500, height=700, scrollbars=yes, resizable=no');
+    };
 
-  function popUpCard() {
-    window.open('/card', '', 'width=500, height=700, scrollbars=yes, resizable=no');
-  }
+    function popUpCard() {
+      window.open('/card', '', 'width=500, height=700, scrollbars=yes, resizable=no');
+    }
 
-  function initialize() {
-    const condition = 'input:not([type="hidden"], #total > input)';
-    const inputs = document.getElementById('purchase-form').querySelectorAll(condition);
-    [...inputs].forEach((input) => {
-      input.value = '';
-    })
-  }
-
-</script>
+  </script>
 {% endblock %}

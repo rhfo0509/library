@@ -653,12 +653,12 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
     expirationDate,
     company,
     totalCount,
+    initialPrice,
     finalPrice,
     bookId,
     bookCount,
     status,
-    stamp,
-    currentPoint,
+    couponId,
     point,
   } = req.body;
 
@@ -701,10 +701,21 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       }
     );
 
+    // Order 테이블의 couponId는 userCoupon의 id를 사용한다. (주문취소 시 복구하기 위해서)
+    const userCoupon = await UserCoupon.findOne({
+      raw: true,
+      where: {
+        userId: req.user.id,
+        couponId: +couponId,
+      }
+    });
+
+
     // 주문내역 생성
     const order = await Order.create({
       totalCount: +totalCount,
-      totalPrice: +finalPrice,
+      initialPrice: +initialPrice,
+      finalPrice: +finalPrice,
       zipCode,
       address,
       detailAddress,
@@ -712,9 +723,19 @@ router.post("/purchase/result", isLoggedIn, async (req, res, next) => {
       cardExpDate: expirationDate,
       cardCompany: company,
       userId: req.user.id,
+      couponId: userCoupon?.id ?? null,
       usedPoint: point,
       usedStamp,
     });
+
+    // 사용한 쿠폰이 있다면 삭제
+    if (userCoupon) {
+      await UserCoupon.destroy({
+        where: {
+          id: userCoupon.id,
+        }
+      })
+    }
 
     // 사용자의 그동안의 결제금액에 이번 주문에서 발생한 실결제금액을 추가
     await User.increment(
