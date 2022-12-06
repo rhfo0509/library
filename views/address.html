@@ -8,9 +8,10 @@
     {% block content %}
       <button onclick="execDaumPostcode()">우편번호 찾기</button>
       <form id="addr-form" action="/address" method="post">
-        <input type="text" id="zipCode" name="zipCode" placeholder="우편번호" readonly required />
+        <!-- required와 readonly는 동시 사용 불가능하다. (as readonly's generally assumed that they will already hold some value.) -->
+        <input type="text" id="zipCode" name="zipCode" placeholder="우편번호" required />
         <br />
-        <input type="text" id="address" name="address" placeholder="주소" readonly required />
+        <input type="text" id="address" name="address" placeholder="주소" required />
         <br />
         <input type="text" id="detailAddress" name="detailAddress" placeholder="상세주소" />
         <br />
@@ -53,7 +54,7 @@
               }
 
               // 우편번호와 주소 정보를 해당 필드에 넣는다.
-              document.getElementById("zipCode").value = Number(data.zonecode);
+              document.getElementById("zipCode").value = +data.zonecode;
               document.getElementById("address").value = addr;
               // 커서를 상세주소 필드로 이동한다.
               document.getElementById("detailAddress").focus();
@@ -75,16 +76,23 @@
 
               opener.document.getElementById('detailAddress').value = detailAddress;
 
-              // window.opener.location.reload();
               window.close();
             }
           })
+
+          // 선택하지 않았을 때
+          alert("선택된 주소가 없습니다.");
         }
 
         function deleteAddr() {
           const addrItems = document.getElementById('addrInfo').children;
           const checked = [...addrItems].find((item) => item.firstElementChild.checked);
-          console.log(checked);
+
+          if (!checked) {
+            alert("선택된 주소가 없습니다.");
+            return;
+          }
+
           axios.delete('/address', {
             data: {
               addrId: +checked.dataset.id,

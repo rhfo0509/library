@@ -6,12 +6,18 @@
   </head>
   <body>
     {% block content %}
-      <form id="card-form" action="/card" method="post">
-        <input type="text" id="number" name="number" placeholder="카드번호" oninput="inputNumberFormat(this)" maxlength="19" required />
+      <form id="card-form" action="/card" method="post" onsubmit="onSubmitCardForm(event)">
+        <input type="text" id="number1" class="number" placeholder="4자리" maxlength="4" required />
+        -
+        <input type="text" id="number2" class="number" placeholder="4자리" maxlength="4" required />
+        -
+        <input type="text" id="number3" class="number" placeholder="4자리" maxlength="4" required />
+        -
+        <input type="text" id="number4" class="number" placeholder="4자리" maxlength="4" required />
         <br />
-        <input type="month" id="expirationDate" name="expirationDate" required />
+        <input type="month" id="expirationDate" required />
         <br />
-        <select name="company">
+        <select id="company">
           <option value="신한">신한카드</option>
           <option value="우리">우리카드</option>
           <option value="국민">국민카드</option>
@@ -45,6 +51,34 @@
     {% block script %}
       <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
       <script>
+        [...document.getElementsByClassName('number')].forEach((input) => {
+          input.style.width = '50px';
+        })
+
+        // 카드 번호 유효성 검증을 위해 따로 함수로 분리
+        function onSubmitCardForm(event) {
+          event.preventDefault();
+
+          const numberList = [...document.getElementsByClassName('number')].map((number) => number.value);
+          const expirationDate = document.getElementById('expirationDate').value;
+          const company = document.getElementById('company').value;
+
+          const numberString = numberList.join("-");
+
+          if (!numberString.match(/\d{4}-\d{4}-\d{4}-\d{4}/)) {
+            alert('유효하지 않은 카드번호입니다.');
+            return;
+          }
+
+          axios.post("/card", {
+            number: numberString,
+            expirationDate,
+            company,
+          })
+            .then((result) => console.log(result.data))
+            .catch((err) => console.error(err));
+
+        }
         function onClickCardBtn() {
           const cardItems = document.getElementById('cardInfo').children;
           [...cardItems].forEach((item) => {
@@ -57,19 +91,13 @@
               opener.document.getElementById('expirationDate').value = expirationDate;
 
               opener.document.getElementById('company').value = company;
+
+              window.close();
             }
           })
 
-          // window.opener.location.reload();
-          window.close();
-        }
-
-        const inputNumberFormat = (target) => {
-          target.value = target.value
-            .replace(/[^0-9]/g, '')
-            .replace(/^(\d{4})(\d{4})(\d{4})(\d{4})$/, `$1-$2-$3-$4`)
-
-          console.log(target.value);
+          // 선택하지 않았을 때
+          alert("선택한 카드가 없습니다.");
         }
 
         function deleteCard() {

@@ -111,6 +111,12 @@
         }
       })
 
+      // 선택한 도서가 없을 때
+      if (!selected.length) {
+        alert('선택된 도서가 없습니다.');
+        return;
+      } 
+
       // 우선 cartItem의 증감된 개수를 반영
       axios.put("/cart", {
         selected,
@@ -136,6 +142,12 @@
           selected.push(+item.dataset.id);
         }
       })
+
+      // 아무것도 선택된 것이 없으면 alert 후 return
+      if (!selected.length) {
+        alert('선택된 도서가 없습니다.');
+        return;
+      } 
 
       axios.delete("/cart", {
         data: {

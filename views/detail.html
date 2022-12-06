@@ -43,6 +43,6 @@
     <div><b>결제카드: </b>{{order.cardCompany}}카드</div>
     <div><b>정가: </b>{{order.initialPrice}}원</div>
     <div><b>사용 포인트: </b>{{order.usedPoint}}원</div>
-    <div><b>결제금액: </b>{{order.totalPrice - order.usedPoint}}원</div>
+    <div><b>결제금액: </b>{{order.finalPrice}}원</div>
   </div>
 {% endblock %}

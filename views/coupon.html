@@ -70,7 +70,7 @@
                 }
               } else {
                 // 최종금액 = 최초금액 * ((100 - 쿠폰할인율) / 100) - 사용포인트
-                opener.document.getElementById('finalPrice').value = Math.round(initialPrice * ((100 - discountRate) / 100) - point);
+                opener.document.getElementById('finalPrice').value = Math.floor(initialPrice * ((100 - discountRate) / 100) - point);
                 // 쿠폰 적용 시 최종금액이 0 미만이 된다면
                 if (opener.document.getElementById('finalPrice').value < 0) {
                   // 최종금액이 0 이상이 되도록 사용포인트를 조절

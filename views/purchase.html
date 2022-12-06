@@ -104,6 +104,7 @@
         <input type="hidden" id="discountPrice" value="0" />
         <input type="hidden" id="minPrice" value="0" />
         <button onclick="popUpCoupon(); return false;">쿠폰 선택</button>
+        <button onclick="cancel(); return false;">선택 취소</button>
       </div>
       <div id="options">
         <button type="submit">구매하기</button>
@@ -181,17 +182,32 @@
       }
     }
 
-      // // 임의 입력
-      // if (point >= currentPoint) {
-      //   // 1. 보유 적립금보다 더 많이 입력한 경우
-      //   event.target.value = Math.floor(event.target.getAttribute('max') / 1000) * 1000;
-      // } else if (point < 0) {
-      //   // 2. 보유 적립금보다 더 적게 입력한 경우
-      //   event.target.value = 0;
-      // } else {
-      //   // 3. 천원 단위로 입력하지 않았을 경우
-      //   event.target.value = Math.floor(point / 1000) * 1000;
-      // }
+    function cancel() {
+      const point = +document.getElementById('point').value;
+      const discountRate = +document.getElementById('discountRate').value;
+      const discountPrice = +document.getElementById('discountPrice').value;
+      const couponId = +document.getElementById('couponId').value;
+
+      if (couponId) {
+        document.getElementById('selectedCoupon').textContent = '';
+        // 할인율 쿠폰인 경우와 할인액 쿠폰인 경우를 분리하여 처리
+        if (discountPrice) {
+          // 최종금액 = 최초금액 - 쿠폰할인액 - 사용포인트
+          document.getElementById('finalPrice').value = initialPrice + discountPrice - point;
+        } else {
+          // 최종금액 = 최초금액 * ((100 - 쿠폰할인율) / 100) - 사용포인트
+          document.getElementById('finalPrice').value = initialPrice / ((100 - discountRate) / 100) - point;
+        }
+      }
+    }
+
+    function initialize() {
+      const condition = 'input:not([type="hidden"], #total > input)';
+      const inputs = document.getElementById('purchase-form').querySelectorAll(condition);
+      [...inputs].forEach((input) => {
+        input.value = '';
+      })
+    }
 
     function popUpCoupon() {
       window.open('/coupon', '', 'width=500, height=700, scrollbars=yes, resizable=no');
