@@ -514,7 +514,7 @@ router.post("/address", isLoggedIn, async (req, res, next) => {
       detailAddress,
       userId: req.user.id,
     });
-    res.status(201).redirect("/address");
+    res.redirect("/address");
   } catch (err) {
     console.error(err);
     return next(err);
@@ -558,7 +558,7 @@ router.delete("/address", isLoggedIn, async (req, res, next) => {
   }
 });
 
-// 주소 선택 창에서 onClickCardBtn을 누를 때 실행되는 라우터
+// 주소 선택 창에서 "새 카드 등록" 버튼을 누를 때 실행되는 라우터
 
 router.post("/card", isLoggedIn, async (req, res, next) => {
   const { number, expirationDate, company } = req.body;
@@ -566,7 +566,7 @@ router.post("/card", isLoggedIn, async (req, res, next) => {
     const existCard = await Card.findByPk(number);
 
     if (existCard) {
-      res.status(409).send("existed");
+      res.send('existed');
     } else {
       await Card.create({
         number,
@@ -575,7 +575,7 @@ router.post("/card", isLoggedIn, async (req, res, next) => {
         userId: req.user.id,
       });
 
-      res.status(201).redirect("/card");
+      res.redirect("/card");
     }
   } catch (err) {
     console.error(err);

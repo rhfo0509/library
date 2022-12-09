@@ -4,11 +4,11 @@
   <form id="signup-form" action="/auth/signup" method="post">
     <fieldset>
       <legend style="font-weight: bold;">회원가입</legend>
-      <input id="id" name="id" type="text" placeholder="아이디" >
+      <input id="id" name="id" type="text" placeholder="아이디" required />
       <br />
-      <input id="password" name="password" type="password" placeholder="비밀번호" />
+      <input id="password" name="password" type="password" placeholder="비밀번호" required />
       <br />
-      <input id="name" name="name" type="text" placeholder="이름" />
+      <input id="name" name="name" type="text" placeholder="이름" required />
       <br />
       <button type="submit">회원가입</button>
     </fieldset>

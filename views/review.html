@@ -4,9 +4,9 @@
   <form action="/reviews" method="post">
     <h3>리뷰 작성하기</h3>
     <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
-    평점: <input type="number" id="rate" name="rate" min="1" max="5" />
+    평점: <input type="number" id="rate" name="rate" min="1" max="5" required />
     <br />
-    리뷰: <textarea id="contents" name="contents" cols="50" rows="5"></textarea>
+    리뷰: <textarea id="contents" name="contents" cols="50" rows="5" required></textarea>
     <br />
     <button>작성</button>
   </form>
@@ -23,9 +23,9 @@
       <form action="/reviews?_method=PUT" method="post" style="display: none;">
         <input type="hidden" id="bookId" name="bookId" value="{{book.id}}" />
         <input type="hidden" id="previousRate" name="prevRate" value="{{myReview.rate}}" />
-        평점: <input type="number" id="rate" name="rate" min="1" max="5" value="{{myReview.rate}}"/>
+        평점: <input type="number" id="rate" name="rate" min="1" max="5" value="{{myReview.rate}}" required />
         <br />
-        리뷰: <textarea id="contents" name="contents" cols="50" rows="5">{{myReview.contents}}</textarea>
+        리뷰: <textarea id="contents" name="contents" cols="50" rows="5" required>{{myReview.contents}}</textarea>
         <br />
         <button>작성</button>
       </form>

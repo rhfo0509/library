@@ -247,6 +247,10 @@ header nav ul a {
 
 /* mypage.html */
 
+#userInfo {
+  margin-left: 20px;
+}
+
 #paymentInfo button {
   border: none;
   background: white;

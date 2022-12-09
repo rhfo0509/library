@@ -21,7 +21,7 @@
 1. 회원이 스스로 회원탈퇴할 수 있도록 한다.
 2. 쿠폰 발급 조건을 수정한다. (매달마다 갱신)
 3. 주문완료, 배송준비중, 배송중, 배송완료, 구매확정 state를 추가한다.
-4. 입력 값을 검증하는 알고리즘을 추가한다.
+4. 회원가입 시 ID/PW 유효성 검사 : ID(영어/숫자만 가능) / PW(특문 포함, n글자 이상..)
 
 ```
 insert into coupons (name, description, discountRate, discountPrice, minPrice) values ("신규가입 쿠폰", "3만원 이상 구매 시 만원 할인", 0, 10000, 30000);

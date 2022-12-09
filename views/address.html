@@ -79,9 +79,6 @@
               window.close();
             }
           })
-
-          // 선택하지 않았을 때
-          alert("선택된 주소가 없습니다.");
         }
 
         function deleteAddr() {
@@ -100,11 +97,6 @@
           })
             .catch((err) => console.error(err));
           location.reload();
-        }
-
-        if (new URL(location.href).searchParams.get("error")) {
-          alert(new URL(location.href).searchParams.get("error"));
-          history.back();
         }
       </script>
     {% endblock %}

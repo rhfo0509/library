@@ -53,7 +53,11 @@
       <script>
         [...document.getElementsByClassName('number')].forEach((input) => {
           input.style.width = '50px';
-        })
+        });
+        document.getElementById('expirationDate').setAttribute(
+          'min', 
+          `${new Date().getFullYear()}-${new Date().getMonth() + 1}`
+        );
 
         // 카드 번호 유효성 검증을 위해 따로 함수로 분리
         function onSubmitCardForm(event) {
@@ -75,7 +79,9 @@
             expirationDate,
             company,
           })
-            .then((result) => console.log(result.data))
+            .then((result) => {
+              location.href = `/card?status=${result.data}`;
+            })
             .catch((err) => console.error(err));
 
         }
@@ -95,14 +101,17 @@
               window.close();
             }
           })
-
-          // 선택하지 않았을 때
-          alert("선택한 카드가 없습니다.");
         }
 
         function deleteCard() {
           const cardItems = document.getElementById('cardInfo').children;
           const checked = [...cardItems].find((item) => item.firstElementChild.checked);
+
+          if (!checked) {
+            alert("선택된 카드가 없습니다.");
+            return;
+          }
+
           axios.delete('/card', {
             data: {
               cardNumber: checked.children[1].textContent,
@@ -112,9 +121,11 @@
           location.reload();
         }
 
-        if (new URL(location.href).searchParams.get("error")) {
-          alert(new URL(location.href).searchParams.get("error"));
-          history.back();
+        window.onload = () => {
+          if (new URL(location.href).searchParams.get("status") === "existed") {
+            alert('이미 존재하는 카드번호입니다.');
+            location.href = '/card';
+          }
         }
       </script>
     {% endblock %}
